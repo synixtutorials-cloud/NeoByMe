@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 
-const commands = [
+module.exports = [
 
   new SlashCommandBuilder()
     .setName('ping')
@@ -14,83 +14,70 @@ const commands = [
     .setName('announce')
     .setDescription('Create an announcement')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages.toString())
-    .addStringOption(option =>
-      option
-        .setName('message')
-        .setDescription('The announcement message')
+    .addStringOption(o =>
+      o.setName('message')
+        .setDescription('Announcement message')
         .setRequired(true)
     )
-    .addChannelOption(option =>
-      option
-        .setName('channel')
-        .setDescription('Channel where the announcement will be sent')
-        .setRequired(false)
+    .addChannelOption(o =>
+      o.setName('channel')
+        .setDescription('Announcement channel')
     )
-    .addStringOption(option =>
-      option
-        .setName('title')
-        .setDescription('Optional announcement title')
-        .setRequired(false)
+    .addStringOption(o =>
+      o.setName('title')
+        .setDescription('Announcement title')
     )
-    .addStringOption(option =>
-      option
-        .setName('color')
-        .setDescription('Optional hex color, e.g. #5865F2')
-        .setRequired(false)
+    .addStringOption(o =>
+      o.setName('color')
+        .setDescription('Hex color such as #5865F2')
     )
-    .addBooleanOption(option =>
-      option
-        .setName('ping')
-        .setDescription('Ping @everyone')
-        .setRequired(false)
+    .addBooleanOption(o =>
+      o.setName('ping')
+        .setDescription('Ping everyone')
     ),
 
   new SlashCommandBuilder()
     .setName('ticket')
-    .setDescription('Manage the ticket system')
+    .setDescription('Manage the NeoByMe ticket system')
     .addSubcommand(sub =>
       sub
         .setName('panel')
-        .setDescription('Create a ticket panel')
+        .setDescription('Send the ticket selection panel')
+    )
+    .addSubcommand(sub =>
+      sub
+        .setName('transcript')
+        .setDescription('Create a ticket transcript')
     ),
 
   new SlashCommandBuilder()
     .setName('gcreate')
     .setDescription('Create a giveaway')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString())
-    .addStringOption(option =>
-      option
-        .setName('time')
-        .setDescription('Duration, e.g. 10m, 1h, 2d')
+    .addStringOption(o =>
+      o.setName('time')
+        .setDescription('Duration such as 10m, 1h or 2d')
         .setRequired(true)
     )
-    .addIntegerOption(option =>
-      option
-        .setName('winners')
+    .addIntegerOption(o =>
+      o.setName('winners')
         .setDescription('Number of winners')
         .setMinValue(1)
         .setMaxValue(20)
         .setRequired(true)
     )
-    .addStringOption(option =>
-      option
-        .setName('prize')
+    .addStringOption(o =>
+      o.setName('prize')
         .setDescription('Giveaway prize')
         .setRequired(true)
     )
-    .addStringOption(option =>
-      option
-        .setName('message')
+    .addStringOption(o =>
+      o.setName('message')
         .setDescription('Optional giveaway message')
-        .setRequired(false)
     )
-    .addBooleanOption(option =>
-      option
-        .setName('ping')
-        .setDescription('Ping winners when the giveaway ends')
-        .setRequired(false)
+    .addBooleanOption(o =>
+      o.setName('ping')
+        .setDescription('Ping winners')
     )
 
 ];
-
-module.exports = commands;
