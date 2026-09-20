@@ -1,9 +1,96 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 
-const names = `help ping uptime botinfo serverinfo userinfo avatar banner roleinfo channelinfo emojiinfo membercount invites inviteleaderboard profile balance daily work deposit withdraw pay leaderboard level rank coinflip dice 8ball rps slots guess duel trivia blackjack highlow scramble math counting count tree plant water harvest grow treetop ticket ticketpanel ticketclose ticketadd ticketremove ticketclaim ticketrename tickettranscript giveaway giveawayend giveawayreroll giveawaycancel giveawaylist gwpanel announce embed say poll slowmode lock unlock clear purge kick ban unban timeout untimeout warn warnings unwarn mute unmute nick role roleadd roleremove massrole softban lockdown unlockdown modlogs case staff automod antilink linkpermission antispam antinuke security securitychannel audit log setlog setwelcome setgoodbye welcome goodbye welcometest goodbyetest youtube youtubeping ytping suggest suggestions feedback report support apply partner partners rules faq info website socials store vote server status invite botinvite supportserver donate premium commands updates changelog feedbackpanel rulespanel infopanel socialpanel verification verify autorole reactionrole rolepanel roles channels members botlist emojis stickers boosters boostlevel servericon serverbanner firstmessage userinfoid remind reminders afk unafk snipe editsnipe quote translate timezone weather calculator random choose flip roll cat dog meme joke fact quoteofday ship hug highfive pat clap welcomeconfig goodbyeconfig ticketconfig giveawayconfig economyconfig gameconfig countconfig treeconfig resetconfig backupconfig reload health stats`.split(' ');
+const commands = [
 
-module.exports = names.map(name =>
   new SlashCommandBuilder()
-    .setName(name)
-    .setDescription('NeoByMe command')
-);
+    .setName('ping')
+    .setDescription('Check NeoByMe latency'),
+
+  new SlashCommandBuilder()
+    .setName('help')
+    .setDescription('Show NeoByMe commands'),
+
+  new SlashCommandBuilder()
+    .setName('announce')
+    .setDescription('Create an announcement')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages.toString())
+    .addStringOption(option =>
+      option
+        .setName('message')
+        .setDescription('The announcement message')
+        .setRequired(true)
+    )
+    .addChannelOption(option =>
+      option
+        .setName('channel')
+        .setDescription('Channel where the announcement will be sent')
+        .setRequired(false)
+    )
+    .addStringOption(option =>
+      option
+        .setName('title')
+        .setDescription('Optional announcement title')
+        .setRequired(false)
+    )
+    .addStringOption(option =>
+      option
+        .setName('color')
+        .setDescription('Optional hex color, e.g. #5865F2')
+        .setRequired(false)
+    )
+    .addBooleanOption(option =>
+      option
+        .setName('ping')
+        .setDescription('Ping @everyone')
+        .setRequired(false)
+    ),
+
+  new SlashCommandBuilder()
+    .setName('ticket')
+    .setDescription('Manage the ticket system')
+    .addSubcommand(sub =>
+      sub
+        .setName('panel')
+        .setDescription('Create a ticket panel')
+    ),
+
+  new SlashCommandBuilder()
+    .setName('gcreate')
+    .setDescription('Create a giveaway')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString())
+    .addStringOption(option =>
+      option
+        .setName('time')
+        .setDescription('Duration, e.g. 10m, 1h, 2d')
+        .setRequired(true)
+    )
+    .addIntegerOption(option =>
+      option
+        .setName('winners')
+        .setDescription('Number of winners')
+        .setMinValue(1)
+        .setMaxValue(20)
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option
+        .setName('prize')
+        .setDescription('Giveaway prize')
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option
+        .setName('message')
+        .setDescription('Optional giveaway message')
+        .setRequired(false)
+    )
+    .addBooleanOption(option =>
+      option
+        .setName('ping')
+        .setDescription('Ping winners when the giveaway ends')
+        .setRequired(false)
+    )
+
+];
+
+module.exports = commands;
