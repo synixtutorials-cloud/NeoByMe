@@ -253,12 +253,7 @@ async function createTicket(interaction, type) {
     ]
   });
 
-  createTicket({
-    channelId: channel.id,
-    guildId: interaction.guild.id,
-    userId: interaction.user.id,
-    type
-  });
+  db.prepare("INSERT INTO tickets (channel_id, guild_id, user_id, type, closed, claimed_by) VALUES (?, ?, ?, ?, 0, NULL)").run(channel.id, interaction.guild.id, interaction.user.id, type);
 
   const embed = new EmbedBuilder()
     .setColor(config.color)
