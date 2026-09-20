@@ -1,9 +1,280 @@
-require('dotenv').config();const {Client,GatewayIntentBits,Partials,Events,EmbedBuilder,PermissionFlagsBits,ChannelType}=require('discord.js');const {user,addCoins,cfg,setcfg}=require('./db');const c=require('./config');
-const client=new Client({intents:[GatewayIntentBits.Guilds,GatewayIntentBits.GuildMembers,GatewayIntentBits.GuildMessages,GatewayIntentBits.MessageContent,GatewayIntentBits.GuildModeration,GatewayIntentBits.GuildInvites],partials:[Partials.Channel,Partials.Message]});
-const stamp=()=>new Intl.DateTimeFormat('en-GB',{timeZone:c.timezone,dateStyle:'short',timeStyle:'medium'}).format(new Date());const E=(t,d)=>new EmbedBuilder().setColor(0x5865f2).setTitle(t).setDescription(d).setTimestamp().setFooter({text:`${c.brand} • Dev By ${c.devBy}`});
-async function security(g){let x=g.channels.cache.find(x=>x.name==='security-alerts'&&x.type===ChannelType.GuildText);if(!x)x=await g.channels.create({name:'security-alerts',type:ChannelType.GuildText,permissionOverwrites:[{id:g.roles.everyone.id,deny:[PermissionFlagsBits.ViewChannel]}]}).catch(()=>null);return x}
-client.once(Events.ClientReady,x=>{console.log(`${x.user.tag} online — ${c.brand}`);x.user.setActivity('/help • 150+ commands')});
-client.on(Events.InteractionCreate,async i=>{if(!i.isChatInputCommand())return;try{const n=i.commandName,u=user(i.user.id);if(n==='ping')return i.reply({embeds:[E('🏓 Pong',`${i.client.ws.ping}ms`)]});if(n==='balance'||n==='profile')return i.reply({embeds:[E('👤 Economy',`🪙 Wallet: **${u.coins}**\n🏦 Bank: **${u.bank}**\n⭐ Level: **${u.level}**\n🌱 Tree: **${u.tree}**`)]});if(n==='daily'){if(Date.now()-u.last_daily<86400000)return i.reply({content:'⏳ Daily is still on cooldown.',ephemeral:true});addCoins(i.user.id,500);require('./db').db.prepare('UPDATE users SET last_daily=? WHERE id=?').run(Date.now(),i.user.id);return i.reply({content:'🎁 You received **500 🪙**.'})}if(n==='work'){const a=Math.floor(Math.random()*251)+150;addCoins(i.user.id,a);return i.reply({content:`💼 You earned **${a} 🪙**.`})}if(['coinflip','flip'].includes(n))return i.reply({content:`🪙 ${Math.random()<.5?'Heads':'Tails'}!`});if(['dice','roll'].includes(n))return i.reply({content:`🎲 You rolled **${Math.floor(Math.random()*6)+1}**.`});if(n==='8ball')return i.reply({content:['🎱 Absolutely.','🎱 Maybe.','🎱 Ask again later.','🎱 Probably not.'][Math.floor(Math.random()*4)]});if(['help','commands'].includes(n))return i.reply({embeds:[E('📚 NeoByMe Command Center','**150+ slash commands**\n\n🎫 Tickets • 🎉 Giveaways • 🛡️ Security • 👋 Welcome/Goodbye\n🪙 Economy • 🎮 Games • 📨 Invites • 🌱 Grow-a-Tree\n▶️ YouTube • 📢 Announcements • 🧹 Moderation • ⚙️ AutoMod')]});if(n==='securitychannel'){if(!i.memberPermissions.has(PermissionFlagsBits.ManageGuild))return i.reply({content:'❌ Manage Server required.',ephemeral:true});let x=await security(i.guild);return i.reply({content:x?`🛡️ ${x}`:'❌ Could not create channel.',ephemeral:true})}if(['antilink','antispam','antinuke','automod'].includes(n)){if(!i.memberPermissions.has(PermissionFlagsBits.ManageGuild))return i.reply({content:'❌ Manage Server required.',ephemeral:true});let g=cfg(i.guild.id);g[n]={enabled:true};setcfg(i.guild.id,g);return i.reply({embeds:[E('🛡️ Security Updated',`**${n}** enabled.`)]})}if(n==='say'||n==='announce'){if(!i.memberPermissions.has(PermissionFlagsBits.ManageMessages))return i.reply({content:'❌ Manage Messages required.',ephemeral:true});let msg=i.options.getString('message')||'NeoByMe announcement';await i.channel.send({embeds:[E(n==='announce'?'📢 Announcement':'💬 Message',msg)]});return i.reply({content:'✅ Posted.',ephemeral:true})}if(n==='ticketpanel'){if(!i.memberPermissions.has(PermissionFlagsBits.ManageGuild))return i.reply({content:'❌ Manage Server required.',ephemeral:true});await i.channel.send({embeds:[E('🎫 Professional Ticket Center','Choose the correct category and a private ticket will be created.\n\n🛠️ Support\n🚨 Report\n📋 Staff Application\n🤝 Partnership') ]});return i.reply({content:'✅ Panel posted.',ephemeral:true})}if(n==='giveaway'||n==='gwpanel'){if(!i.memberPermissions.has(PermissionFlagsBits.ManageGuild))return i.reply({content:'❌ Manage Server required.',ephemeral:true});await i.channel.send({embeds:[E('🎉 GIVEAWAY','🎁 Prize: **Mystery Prize**\n⏱️ Use `/giveaway` for a timed giveaway.\n🔁 Rerolls supported.') ]});return i.reply({content:'✅ Giveaway panel posted.',ephemeral:true})}if(n==='tree'||n==='grow'||n==='plant'||n==='water'||n==='harvest'||n==='treetop')return i.reply({embeds:[E('🌱 Grow-a-Tree',`Your tree level: **${u.tree}**\nUse **/plant**, **/water**, **/grow**, and **/harvest**.`)]});return i.reply({embeds:[E(`/${n}`,`✅ **${n}** is active and registered.\n\nConfigure the related system from its command category.`)]})}catch(e){console.error(e);if(!i.replied)i.reply({content:'❌ An internal error occurred.',ephemeral:true}).catch(()=>{})}});
-client.on(Events.MessageCreate,async m=>{if(m.author.bot||!m.guild)return;let g=cfg(m.guild.id);if(g.antilink?.enabled&&/https?:\/\/|discord\.gg\//i.test(m.content)&&!m.member.permissions.has(PermissionFlagsBits.ManageMessages)){await m.delete().catch(()=>{});return}let ch=c.channels.log&&m.guild.channels.cache.get(c.channels.log);if(ch&&ch.id!==m.channel.id)ch.send(`**${m.guild.name} - ${stamp()}**\n${m.author.tag} | <#${m.channel.id}>\n${m.content.slice(0,1800)||'[attachment]'}`).catch(()=>{})});
-client.on(Events.GuildMemberAdd,m=>{let ch=c.channels.welcome&&m.guild.channels.cache.get(c.channels.welcome);if(ch)ch.send({embeds:[E(`👋 Welcome to ${m.guild.name}!`,`Welcome ${m}! You are member **#${m.guild.memberCount}**.\n\nPlease read the rules and enjoy NeoByMe.`)]}).catch(()=>{})});client.on(Events.GuildMemberRemove,m=>{let ch=c.channels.goodbye&&m.guild.channels.cache.get(c.channels.goodbye);if(ch)ch.send({embeds:[E('👋 Goodbye!',`**${m.user.tag}** has left the server.`)]}).catch(()=>{})});
-process.on('unhandledRejection',console.error);client.login(process.env.DISCORD_TOKEN);
+require('dotenv').config();
+
+const {
+  Client,
+  GatewayIntentBits,
+  Events,
+  EmbedBuilder,
+  PermissionsBitField,
+  ChannelType
+} = require('discord.js');
+
+const config = require('./config');
+const tickets = require('./tickets');
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildModeration,
+    GatewayIntentBits.GuildInvites
+  ]
+});
+
+const stamp = () =>
+  new Intl.DateTimeFormat('en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(new Date());
+
+const embed = (title, description) =>
+  new EmbedBuilder()
+    .setTitle(title)
+    .setDescription(description)
+    .setColor(0x5865f2)
+    .setTimestamp();
+
+client.once(Events.ClientReady, async () => {
+  console.log(`NeoByMe online as ${client.user.tag}`);
+  client.user.setActivity('/help • NeoByMe', { type: 0 });
+});
+
+client.on(Events.InteractionCreate, async i => {
+  try {
+    // =========================
+    // TICKET SELECT MENU
+    // =========================
+    if (i.isStringSelectMenu() && i.customId === 'ticket:create') {
+      const type = i.values[0];
+
+      if (!tickets.TYPES[type]) {
+        return i.reply({
+          content: '❌ Invalid ticket type.',
+          ephemeral: true
+        });
+      }
+
+      return tickets.createTicket(i, type);
+    }
+
+    // =========================
+    // TICKET BUTTONS
+    // =========================
+    if (i.isButton() && i.customId.startsWith('ticket:')) {
+      const action = i.customId.split(':')[1];
+
+      if (action === 'claim')
+        return tickets.claimTicket(i);
+
+      if (action === 'close')
+        return tickets.closeTicket(i);
+
+      if (action === 'reopen')
+        return tickets.reopenTicket(i);
+
+      if (action === 'delete')
+        return tickets.deleteTicket(i);
+
+      return;
+    }
+
+    // =========================
+    // SLASH COMMANDS
+    // =========================
+    if (!i.isChatInputCommand()) return;
+
+    const n = i.commandName;
+
+    // /ping
+    if (n === 'ping') {
+      return i.reply({
+        embeds: [
+          embed(
+            '🏓 NeoByMe Pong!',
+            `Latency: **${client.ws.ping}ms**`
+          )
+        ]
+      });
+    }
+
+    // /help
+    if (n === 'help') {
+      return i.reply({
+        embeds: [
+          embed(
+            '🤖 NeoByMe Help',
+            [
+              '**General**',
+              '`/ping` — Check bot latency',
+              '`/help` — Show this help',
+              '`/announce` — Create an announcement',
+              '',
+              '**Tickets**',
+              '`/ticket panel` — Send the ticket panel',
+              '`/ticket transcript` — Save a ticket transcript',
+              '',
+              '**Giveaways**',
+              '`/gcreate` — Create a giveaway'
+            ].join('\n')
+          )
+        ]
+      });
+    }
+
+    // =========================
+    // /announce
+    // =========================
+    if (n === 'announce') {
+      const message = i.options.getString('message', true);
+      const channel = i.options.getChannel('channel') || i.channel;
+      const title = i.options.getString('title') || '📢 Announcement';
+      const color = i.options.getString('color') || '#5865F2';
+      const ping = i.options.getBoolean('ping') || false;
+
+      if (!channel || !channel.isTextBased()) {
+        return i.reply({
+          content: '❌ That channel cannot receive messages.',
+          ephemeral: true
+        });
+      }
+
+      const announcement = new EmbedBuilder()
+        .setTitle(title)
+        .setDescription(message)
+        .setColor(color)
+        .setFooter({
+          text: `NeoByMe • ${i.user.tag}`
+        })
+        .setTimestamp();
+
+      await channel.send({
+        content: ping ? '@everyone' : undefined,
+        embeds: [announcement]
+      });
+
+      return i.reply({
+        content: `✅ Announcement sent to ${channel}.`,
+        ephemeral: true
+      });
+    }
+
+    // =========================
+    // /ticket
+    // =========================
+    if (n === 'ticket') {
+      const sub = i.options.getSubcommand();
+
+      if (sub === 'panel') {
+        if (
+          !i.memberPermissions?.has(
+            PermissionsBitField.Flags.ManageChannels
+          )
+        ) {
+          return i.reply({
+            content: '❌ You need **Manage Channels** to use this.',
+            ephemeral: true
+          });
+        }
+
+        return i.reply({
+          embeds: [tickets.panelEmbed()],
+          components: [tickets.panelRow()]
+        });
+      }
+
+      if (sub === 'transcript') {
+        return tickets.transcript(i);
+      }
+    }
+
+    // =========================
+    // /gcreate
+    // =========================
+    if (n === 'gcreate') {
+      const time = i.options.getString('time', true);
+      const winners = i.options.getInteger('winners', true);
+      const prize = i.options.getString('prize', true);
+      const message =
+        i.options.getString('message') ||
+        'React with 🎉 to enter!';
+
+      const ping = i.options.getBoolean('ping') || false;
+
+      const giveawayEmbed = new EmbedBuilder()
+        .setTitle('🎉 GIVEAWAY')
+        .setDescription(
+          `${message}\n\n🎁 **Prize:** ${prize}\n🏆 **Winners:** ${winners}\n⏱️ **Duration:** ${time}\n\nReact with 🎉 to enter!`
+        )
+        .setColor(0xffd700)
+        .setFooter({
+          text: `Hosted by ${i.user.tag}`
+        })
+        .setTimestamp();
+
+      const msg = await i.channel.send({
+        content: ping ? '@everyone' : undefined,
+        embeds: [giveawayEmbed]
+      });
+
+      await msg.react('🎉');
+
+      return i.reply({
+        content: '✅ Giveaway created.',
+        ephemeral: true
+      });
+    }
+  } catch (err) {
+    console.error('Interaction error:', err);
+
+    if (!i.replied && !i.deferred) {
+      await i.reply({
+        content: '❌ Something went wrong while processing that command.',
+        ephemeral: true
+      }).catch(() => {});
+    }
+  }
+});
+
+// =========================
+// MESSAGE EVENTS
+// =========================
+
+client.on(Events.MessageCreate, async message => {
+  if (message.author.bot) return;
+
+  // Basic anti-link example
+  const cfg = config || {};
+
+  if (
+    cfg.antilink &&
+    /https?:\/\/|discord\.gg\//i.test(message.content)
+  ) {
+    if (
+      message.member &&
+      !message.member.permissions.has(
+        PermissionsBitField.Flags.ManageMessages
+      )
+    ) {
+      await message.delete().catch(() => {});
+    }
+  }
+});
+
+// =========================
+// MEMBER EVENTS
+// =========================
+
+client.on(Events.GuildMemberAdd, async member => {
+  console.log(`${member.user.tag} joined ${member.guild.name}`);
+});
+
+client.on(Events.GuildMemberRemove, async member => {
+  console.log(`${member.user.tag} left ${member.guild.name}`);
+});
+
+process.on('unhandledRejection', console.error);
+process.on('uncaughtException', console.error);
+
+client.login(process.env.DISCORD_TOKEN);
