@@ -276,9 +276,7 @@ async function createTicket(interaction, type) {
     components: [ticketButtons()]
   });
 
-  await interaction.editReply({
-    content: `✅ Your ticket has been created: ${channel}`
-  });
+  await interaction.followUp({ content: `✅ Your ticket has been created: ${channel}`, ephemeral: true }).catch(() => {});
 }
 
 async function claimTicket(interaction) {
