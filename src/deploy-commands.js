@@ -4,22 +4,31 @@ const { REST, Routes } = require('discord.js');
 const commands = require('./commands');
 
 (async () => {
-  const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+  try {
+    const rest = new REST({ version: '10' })
+      .setToken(process.env.DISCORD_TOKEN);
 
-  const route = process.env.GUILD_ID
-    ? Routes.applicationGuildCommands(
-        process.env.CLIENT_ID,
-        process.env.GUILD_ID
-      )
-    : Routes.applicationCommands(process.env.CLIENT_ID);
+    const route = process.env.GUILD_ID
+      ? Routes.applicationGuildCommands(
+          process.env.CLIENT_ID,
+          process.env.GUILD_ID
+        )
+      : Routes.applicationCommands(process.env.CLIENT_ID);
 
-  const commandData = commands
-    .slice(0, 100)
-    .map(command => command.toJSON());
+    const commandData = commands
+      .slice(0, 100)
+      .map(command => command.toJSON());
 
-  console.log(`Registering ${commandData.length} of ${commands.length} commands...`);
+    console.log(`Registering ${commandData.length} commands...`);
 
-  await rest.put(route, { body: commandData });
+    await rest.put(route, {
+      body: commandData
+    });
 
-  console.log(`Successfully registered ${commandData.length} commands.`);
-})().catch(console.error);
+    console.log('✅ Slash commands registered successfully.');
+  } catch (error) {
+    console.error('⚠️ Slash command registration failed:');
+    console.error(error);
+    console.log('⚠️ Continuing startup so NeoByMe can come online.');
+  }
+})();
