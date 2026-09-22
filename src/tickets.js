@@ -185,7 +185,7 @@ async function createTicket(interaction, type) {
   );
 
   if (existing) {
-    const channel = interaction.guild.channels.cache.get(existing.channel_id);
+    const channel = await interaction.guild.channels.fetch(existing.channel_id).catch(() => null);
 
     if (channel) {
       return interaction.reply({
