@@ -221,7 +221,6 @@ async function createTicket(interaction, type) {
   const channel = await interaction.guild.channels.create({
     name: safeName || `ticket-${interaction.user.id}`,
     type: ChannelType.GuildText,
-    parent: category.id,
     topic: `${config.label} ticket • ${interaction.user.id}`,
     permissionOverwrites: [
       {
