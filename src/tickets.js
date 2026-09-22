@@ -240,7 +240,7 @@ async function createTicket(interaction, type) {
         ]
       },
       {
-        id: interaction.client.user.id,
+        id: interaction.guild.members.me.roles.highest.id,
         allow: [
           PermissionFlagsBits.ViewChannel,
           PermissionFlagsBits.SendMessages,
