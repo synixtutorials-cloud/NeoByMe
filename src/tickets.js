@@ -225,9 +225,7 @@ async function createTicket(interaction, type) {
     permissionOverwrites: [
       {
         id: interaction.guild.roles.everyone.id,
-        deny: [
-          PermissionFlagsBits.ViewChannel
-        ]
+        deny: [PermissionFlagsBits.ViewChannel]
       },
       {
         id: interaction.user.id,
@@ -239,7 +237,7 @@ async function createTicket(interaction, type) {
         ]
       },
       {
-        id: interaction.guild.members.me.roles.highest.id,
+        id: interaction.guild.members.me.id,
         allow: [
           PermissionFlagsBits.ViewChannel,
           PermissionFlagsBits.SendMessages,
