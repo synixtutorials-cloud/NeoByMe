@@ -224,7 +224,7 @@ async function createTicket(interaction, type) {
     topic: `${config.label} ticket • ${interaction.user.id}`,
     permissionOverwrites: [
       {
-        id: interaction.guild.roles.everyone.id,
+        id: interaction.guild.id,
         deny: [PermissionFlagsBits.ViewChannel]
       },
       {
@@ -237,7 +237,7 @@ async function createTicket(interaction, type) {
         ]
       },
       {
-        id: interaction.guild.members.me.id,
+        id: interaction.client.user.id,
         allow: [
           PermissionFlagsBits.ViewChannel,
           PermissionFlagsBits.SendMessages,
