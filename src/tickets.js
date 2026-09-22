@@ -253,6 +253,13 @@ async function createTicket(interaction, type) {
     ]
   });
 
+  await channel.permissionOverwrites.edit(interaction.user.id, {
+    ViewChannel: true,
+    SendMessages: true,
+    ReadMessageHistory: true,
+    AttachFiles: true
+  });
+
   db.prepare("INSERT INTO tickets (channel_id, guild_id, user_id, type, closed, claimed_by, created_at) VALUES (?, ?, ?, ?, 0, NULL, ?)").run(channel.id, interaction.guild.id, interaction.user.id, type, Date.now());
 
   const embed = new EmbedBuilder()
