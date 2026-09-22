@@ -286,7 +286,7 @@ async function createTicket(interaction, type) {
     components: [ticketButtons()]
   });
 
-  await interaction.followUp({ content: `✅ Your ticket has been created: <#${channel.id}>`, ephemeral: true }).catch(() => {});
+  await interaction.followUp({ content: `✅ Your ticket has been created: **#${channel.name}**\nhttps://discord.com/channels/${interaction.guild.id}/${channel.id}`, ephemeral: true }).catch(() => {});
 }
 
 async function claimTicket(interaction) {
