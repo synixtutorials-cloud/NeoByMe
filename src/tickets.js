@@ -252,7 +252,8 @@ async function createTicket(interaction, type) {
     ]
   });
 
-  await channel.permissionOverwrites.edit(interaction.user.id, {
+  const ticketMember = await interaction.guild.members.fetch(interaction.user.id);
+  await channel.permissionOverwrites.edit(ticketMember, {
     ViewChannel: true,
     SendMessages: true,
     ReadMessageHistory: true,
