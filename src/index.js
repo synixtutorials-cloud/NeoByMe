@@ -60,27 +60,17 @@ client.on(Events.InteractionCreate, async i => {
     }
 
     // =========================
+    // TICKET MODAL
+    // =========================
+    if (i.isModalSubmit() && i.customId === 'ticket:add_modal') {
+      return tickets.addMemberModal(i);
+    }
+
+    // =========================
     // TICKET BUTTONS
     // =========================
     if (i.isButton() && i.customId.startsWith('ticket:')) {
-      const action = i.customId.split(':')[1];
-
-      if (action === 'claim')
-        return tickets.claimTicket(i);
-
-      if (action === 'close')
-        return tickets.closeTicket(i);
-
-      if (action === 'reopen')
-        return tickets.reopenTicket(i);
-
-      if (action === 'delete')
-
-      if (action === 'transcript')
-        return tickets.transcript(i);
-        return tickets.deleteTicket(i);
-
-      return;
+      return tickets.handleButton(i);
     }
 
     // =========================

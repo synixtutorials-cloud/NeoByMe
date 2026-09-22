@@ -7,10 +7,17 @@ const {
   EmbedBuilder,
   ChannelType,
   PermissionFlagsBits,
-  AttachmentBuilder
+  AttachmentBuilder,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle
 } = require('discord.js');
 
 const { db } = require('./db');
+
+/* =========================================================
+   DATABASE
+========================================================= */
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS tickets (
@@ -24,485 +31,872 @@ CREATE TABLE IF NOT EXISTS tickets (
 );
 `);
 
+/* =========================================================
+   CONFIG
+========================================================= */
+
 const TYPES = {
   support: {
     label: 'Support',
     emoji: '🛠️',
-    description: 'Get help with NeoByMe or the server.',
-    color: 0x5865F2
+    description: 'Get help with something'
   },
+
   report: {
     label: 'Report',
     emoji: '🚨',
-    description: 'Report a player or server issue.',
-    color: 0xED4245
+    description: 'Report a player or problem'
   },
+
   staff: {
     label: 'Staff Application',
-    emoji: '📋',
-    description: 'Apply to become a member of the staff team.',
-    color: 0x57F287
+    emoji: '👮',
+    description: 'Apply for staff'
   },
+
   partnership: {
     label: 'Partnership',
     emoji: '🤝',
-    description: 'Business and server partnership requests.',
-    color: 0xFEE75C
+    description: 'Partnership requests'
   }
 };
 
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function getTicket(channelId) {
+  return db
+    .prepare('SELECT * FROM tickets WHERE channel_id = ?')
+    .get(channelId);
+}
+
+function getOpenTicket(guildId, userId) {
+  return db
+    .prepare(`
+      SELECT *
+      FROM tickets
+      WHERE guild_id = ?
+        AND user_id = ?
+        AND closed = 0
+      LIMIT 1
+    `)
+    .get(guildId, userId);
+}
+
+function updateTicket(channelId, data) {
+  const fields = Object.keys(data);
+
+  if (!fields.length) return;
+
+  const set = fields.map(field => `${field} = ?`).join(', ');
+  const values = fields.map(field => data[field]);
+
+  db.prepare(`
+    UPDATE tickets
+    SET ${set}
+    WHERE channel_id = ?
+  `).run(...values, channelId);
+}
+
+function isStaff(interaction) {
+  return interaction.memberPermissions?.has(
+    PermissionFlagsBits.ManageChannels
+  );
+}
+
+function channelUrl(guildId, channelId) {
+  return `https://discord.com/channels/${guildId}/${channelId}`;
+}
+
+function safeChannelName(type, username) {
+  const cleanUser = String(username)
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '')
+    .slice(0, 55);
+
+  return `${type}-${cleanUser || 'user'}`.slice(0, 90);
+}
+
+/* =========================================================
+   TICKET PANEL
+========================================================= */
+
 function panelEmbed() {
   return new EmbedBuilder()
-    .setColor(0x5865F2)
-    .setTitle('🎫 NeoByMe Support Center')
+    .setTitle('🎫 NeoByMe Support')
     .setDescription(
-      'Welcome to the official support center.\n\n' +
-      'Select the category that best matches your request below.\n\n' +
-      '🛠️ **Support** — General help\n' +
-      '🚨 **Report** — Report an issue or user\n' +
-      '📋 **Staff Application** — Apply for staff\n' +
-      '🤝 **Partnership** — Partnership requests'
+      [
+        'Need help? Open a ticket below.',
+        '',
+        '🛠️ **Support** — General help',
+        '🚨 **Report** — Report a player/problem',
+        '👮 **Staff Application** — Apply for staff',
+        '🤝 **Partnership** — Partnership requests',
+        '',
+        'Please choose the option that matches your request.'
+      ].join('\n')
     )
-    .setFooter({ text: 'NeoByMe • Please do not abuse the ticket system' })
-    .setTimestamp();
+    .setColor(0x5865f2)
+    .setFooter({
+      text: 'NeoByMe • Ticket System'
+    });
 }
 
 function panelRow() {
   const menu = new StringSelectMenuBuilder()
     .setCustomId('ticket:create')
-    .setPlaceholder('🎫 Select a ticket category...')
+    .setPlaceholder('🎫 Choose a ticket type...')
     .addOptions(
-      Object.entries(TYPES).map(([value, data]) =>
+      Object.entries(TYPES).map(([value, config]) =>
         new StringSelectMenuOptionBuilder()
-          .setLabel(data.label)
-          .setDescription(data.description)
+          .setLabel(config.label)
+          .setDescription(config.description)
           .setValue(value)
-          .setEmoji(data.emoji)
+          .setEmoji(config.emoji)
       )
     );
 
   return new ActionRowBuilder().addComponents(menu);
 }
 
-function ticketButtons(claimed = false, closed = false) {
+/* =========================================================
+   TICKET BUTTONS
+========================================================= */
+
+function ticketButtons(ticket) {
   const row = new ActionRowBuilder();
 
-  if (!closed) {
+  if (ticket.closed) {
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId('ticket:claim')
-        .setLabel(claimed ? 'Claimed' : 'Claim')
-        .setEmoji('🙋')
-        .setStyle(claimed ? ButtonStyle.Secondary : ButtonStyle.Primary)
-        .setDisabled(claimed),
+        .setCustomId('ticket:reopen')
+        .setLabel('Reopen Ticket')
+        .setEmoji('🔓')
+        .setStyle(ButtonStyle.Success),
 
       new ButtonBuilder()
-        .setCustomId('ticket:close')
-        .setLabel('Close')
-        .setEmoji('🔒')
+        .setCustomId('ticket:transcript')
+        .setLabel('Transcript')
+        .setEmoji('📜')
+        .setStyle(ButtonStyle.Secondary),
+
+      new ButtonBuilder()
+        .setCustomId('ticket:delete')
+        .setLabel('Delete Ticket')
+        .setEmoji('🗑️')
         .setStyle(ButtonStyle.Danger)
     );
   } else {
     row.addComponents(
       new ButtonBuilder()
-        .setCustomId('ticket:reopen')
-        .setLabel('Reopen')
-        .setEmoji('🔓')
-        .setStyle(ButtonStyle.Success),
+        .setCustomId('ticket:claim')
+        .setLabel(ticket.claimed_by ? 'Claimed' : 'Claim Ticket')
+        .setEmoji('🙋')
+        .setStyle(
+          ticket.claimed_by
+            ? ButtonStyle.Secondary
+            : ButtonStyle.Primary
+        )
+        .setDisabled(Boolean(ticket.claimed_by)),
 
       new ButtonBuilder()
-        .setCustomId('ticket:delete')
-        .setLabel('Delete')
-        .setEmoji('🗑️')
-        .setStyle(ButtonStyle.Danger)
+        .setCustomId('ticket:close')
+        .setLabel('Close Ticket')
+        .setEmoji('🔒')
+        .setStyle(ButtonStyle.Danger),
+
+      new ButtonBuilder()
+        .setCustomId('ticket:transcript')
+        .setLabel('Transcript')
+        .setEmoji('📜')
+        .setStyle(ButtonStyle.Secondary),
+
+      new ButtonBuilder()
+        .setCustomId('ticket:add')
+        .setLabel('Add Member')
+        .setEmoji('➕')
+        .setStyle(ButtonStyle.Secondary)
     );
   }
-
-  row.addComponents(
-    new ButtonBuilder()
-      .setCustomId('ticket:add')
-      .setLabel('Add Member')
-      .setEmoji('➕')
-      .setStyle(ButtonStyle.Secondary)
-  );
 
   return row;
 }
 
-function getTicket(channelId) {
-  return db.prepare(
-    'SELECT * FROM tickets WHERE channel_id=?'
-  ).get(channelId);
-}
-
-function getUserOpenTicket(guildId, userId) {
-  return db.prepare(
-    'SELECT * FROM tickets WHERE guild_id=? AND user_id=? AND closed=0'
-  ).get(guildId, userId);
-}
-
-function createTicket(data) {
-  db.prepare(`
-    INSERT INTO tickets
-    (channel_id,guild_id,user_id,type,created_at)
-    VALUES (?,?,?,?,?)
-  `).run(
-    data.channelId,
-    data.guildId,
-    data.userId,
-    data.type,
-    Date.now()
-  );
-}
-
-function updateTicket(channelId, values) {
-  const fields = Object.keys(values);
-  const sql = `
-    UPDATE tickets
-    SET ${fields.map(x => `${x}=?`).join(',')}
-    WHERE channel_id=?
-  `;
-
-  db.prepare(sql).run(
-    ...fields.map(x => values[x]),
-    channelId
-  );
-}
+/* =========================================================
+   CREATE TICKET
+========================================================= */
 
 async function createTicket(interaction, type) {
-  const config = TYPES[type];
+  try {
+    const config = TYPES[type];
 
-  if (!config) {
-    return interaction.reply({
-      content: '❌ Invalid ticket category.',
-      ephemeral: true
-    });
-  }
-
-  const existing = getUserOpenTicket(
-    interaction.guild.id,
-    interaction.user.id
-  );
-
-  if (existing) {
-    const channel = await interaction.guild.channels.fetch(existing.channel_id).catch(() => null);
-
-    if (channel) {
+    if (!config) {
       return interaction.reply({
-        content: `❌ You already have an open ticket: ${channel}`,
+        content: '❌ Invalid ticket type.',
         ephemeral: true
       });
     }
 
-    updateTicket(existing.channel_id, { closed: 1 });
-  }
+    const existing = getOpenTicket(
+      interaction.guild.id,
+      interaction.user.id
+    );
 
-  await interaction.deferReply({ ephemeral: true });
+    if (existing) {
+      const existingChannel =
+        await interaction.guild.channels
+          .fetch(existing.channel_id)
+          .catch(() => null);
 
-  let category = interaction.guild.channels.cache.find(
-    c =>
-      c.type === ChannelType.GuildCategory &&
-      c.name.toLowerCase() === 'tickets'
-  );
-
-  if (!category) {
-    category = await interaction.guild.channels.create({
-      name: 'Tickets',
-      type: ChannelType.GuildCategory
-    });
-  }
-
-  const safeName =
-    `${config.label}-${interaction.user.username}`
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, '')
-      .slice(0, 80);
-
-  const channel = await interaction.guild.channels.create({
-    name: safeName || `ticket-${interaction.user.id}`,
-    type: ChannelType.GuildText,
-    topic: `${config.label} ticket • ${interaction.user.id}`,
-    permissionOverwrites: [
-      {
-        id: interaction.guild.id,
-        deny: [PermissionFlagsBits.ViewChannel]
-      },
-      {
-        id: interaction.user.id,
-        allow: [
-          PermissionFlagsBits.ViewChannel,
-          PermissionFlagsBits.SendMessages,
-          PermissionFlagsBits.ReadMessageHistory,
-          PermissionFlagsBits.AttachFiles
-        ]
-      },
-      {
-        id: interaction.client.user.id,
-        allow: [
-          PermissionFlagsBits.ViewChannel,
-          PermissionFlagsBits.SendMessages,
-          PermissionFlagsBits.ReadMessageHistory,
-          PermissionFlagsBits.ManageChannels,
-          PermissionFlagsBits.ManageMessages,
-          PermissionFlagsBits.AttachFiles
-        ]
+      if (existingChannel) {
+        return interaction.reply({
+          content:
+            `❌ You already have an open ticket.\n\n` +
+            `**#${existingChannel.name}**\n` +
+            `${channelUrl(interaction.guild.id, existingChannel.id)}`,
+          ephemeral: true
+        });
       }
-    ]
-  });
 
-  db.prepare("INSERT INTO tickets (channel_id, guild_id, user_id, type, closed, claimed_by, created_at) VALUES (?, ?, ?, ?, 0, NULL, ?)").run(channel.id, interaction.guild.id, interaction.user.id, type, Date.now());
+      // Channel was deleted manually.
+      updateTicket(existing.channel_id, {
+        closed: 1
+      });
+    }
 
-  const checkPerms = channel.permissionsFor(interaction.user.id);
-  console.log("TICKET ACCESS CHECK:", {
-    channelId: channel.id,
-    userId: interaction.user.id,
-    canView: checkPerms?.has(PermissionFlagsBits.ViewChannel),
-    canSend: checkPerms?.has(PermissionFlagsBits.SendMessages),
-    overwrites: channel.permissionOverwrites.cache.map(o => ({
-      id: o.id,
-      allow: o.allow.bitfield.toString(),
-      deny: o.deny.bitfield.toString()
-    }))
-  });
+    await interaction.deferReply({
+      ephemeral: true
+    });
 
-  const embed = new EmbedBuilder()
-    .setColor(config.color)
-    .setTitle(`${config.emoji} ${config.label}`)
-    .setDescription(
-      `Welcome ${interaction.user}!\n\n` +
-      `Thank you for contacting **NeoByMe Support**.\n\n` +
-      `A staff member will assist you shortly.\n\n` +
-      `**Ticket Information**\n` +
-      `> Category: **${config.label}**\n` +
-      `> Created by: ${interaction.user}\n\n` +
-      `Please explain your request clearly and provide any relevant information.`
-    )
-    .setFooter({ text: 'NeoByMe Ticket System' })
-    .setTimestamp();
+    /* -----------------------------------------------------
+       FIND CATEGORY
+    ----------------------------------------------------- */
 
-  await channel.send({
-    content: `${interaction.user}`,
-    embeds: [embed],
-    components: [ticketButtons()]
-  });
+    let category =
+      interaction.guild.channels.cache.find(
+        channel =>
+          channel.type === ChannelType.GuildCategory &&
+          ['tickets', 'support'].includes(
+            channel.name.toLowerCase()
+          )
+      );
 
-  await interaction.followUp({ content: `✅ Your ticket has been created: **#${channel.name}**\nhttps://discord.com/channels/${interaction.guild.id}/${channel.id}`, ephemeral: true }).catch(() => {});
+    if (!category) {
+      category = await interaction.guild.channels.create({
+        name: 'Tickets',
+        type: ChannelType.GuildCategory
+      });
+    }
+
+    /* -----------------------------------------------------
+       CREATE CHANNEL
+    ----------------------------------------------------- */
+
+    const channel = await interaction.guild.channels.create({
+      name: safeChannelName(
+        type,
+        interaction.user.username
+      ),
+
+      type: ChannelType.GuildText,
+
+      parent: category.id,
+
+      topic:
+        `${config.label} ticket • Owner: ` +
+        `${interaction.user.id}`,
+
+      permissionOverwrites: [
+        {
+          id: interaction.guild.id,
+          deny: [
+            PermissionFlagsBits.ViewChannel
+          ]
+        },
+
+        {
+          id: interaction.user.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory,
+            PermissionFlagsBits.AttachFiles
+          ]
+        },
+
+        {
+          id: interaction.client.user.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory,
+            PermissionFlagsBits.ManageChannels,
+            PermissionFlagsBits.ManageMessages,
+            PermissionFlagsBits.AttachFiles
+          ]
+        }
+      ]
+    });
+
+    /* -----------------------------------------------------
+       DATABASE
+    ----------------------------------------------------- */
+
+    db.prepare(`
+      INSERT INTO tickets
+      (
+        channel_id,
+        guild_id,
+        user_id,
+        type,
+        claimed_by,
+        closed,
+        created_at
+      )
+      VALUES (?, ?, ?, ?, NULL, 0, ?)
+    `).run(
+      channel.id,
+      interaction.guild.id,
+      interaction.user.id,
+      type,
+      Date.now()
+    );
+
+    const ticket = getTicket(channel.id);
+
+    /* -----------------------------------------------------
+       EMBED
+    ----------------------------------------------------- */
+
+    const embed = new EmbedBuilder()
+      .setTitle(`${config.emoji} ${config.label} Ticket`)
+      .setDescription(
+        [
+          `Welcome ${interaction.user}!`,
+          '',
+          `**Ticket Type:** ${config.label}`,
+          `**Created By:** ${interaction.user}`,
+          '',
+          'Please describe your issue clearly.',
+          'A staff member will assist you shortly.'
+        ].join('\n')
+      )
+      .setColor(0x5865f2)
+      .setTimestamp()
+      .setFooter({
+        text: 'NeoByMe Ticket System'
+      });
+
+    await channel.send({
+      content: `${interaction.user}`,
+      embeds: [embed],
+      components: [ticketButtons(ticket)]
+    });
+
+    await interaction.editReply({
+      content:
+        `✅ Your ticket has been created:\n\n` +
+        `**#${channel.name}**\n` +
+        `${channelUrl(interaction.guild.id, channel.id)}`
+    });
+
+  } catch (error) {
+    console.error('CREATE TICKET ERROR:', error);
+
+    const message =
+      '❌ I could not create your ticket. Please contact staff.';
+
+    if (interaction.deferred) {
+      await interaction.editReply({
+        content: message
+      }).catch(() => {});
+    } else if (!interaction.replied) {
+      await interaction.reply({
+        content: message,
+        ephemeral: true
+      }).catch(() => {});
+    }
+  }
 }
+
+/* =========================================================
+   CLAIM
+========================================================= */
 
 async function claimTicket(interaction) {
-  const ticket = getTicket(interaction.channel.id);
+  try {
+    if (!isStaff(interaction)) {
+      return interaction.reply({
+        content:
+          '❌ Only staff members can claim tickets.',
+        ephemeral: true
+      });
+    }
 
-  if (!ticket) {
+    const ticket = getTicket(interaction.channel.id);
+
+    if (!ticket) {
+      return interaction.reply({
+        content: '❌ This is not a valid ticket channel.',
+        ephemeral: true
+      });
+    }
+
+    if (ticket.closed) {
+      return interaction.reply({
+        content: '❌ This ticket is closed.',
+        ephemeral: true
+      });
+    }
+
+    if (ticket.claimed_by) {
+      return interaction.reply({
+        content: '❌ This ticket has already been claimed.',
+        ephemeral: true
+      });
+    }
+
+    updateTicket(interaction.channel.id, {
+      claimed_by: interaction.user.id
+    });
+
+    const updated = getTicket(interaction.channel.id);
+
+    await interaction.channel.send({
+      embeds: [
+        new EmbedBuilder()
+          .setDescription(
+            `🙋 **${interaction.user}** claimed this ticket.`
+          )
+          .setColor(0x57f287)
+          .setTimestamp()
+      ]
+    });
+
+    await interaction.message.edit({
+      components: [ticketButtons(updated)]
+    });
+
     return interaction.reply({
-      content: '❌ This is not a NeoByMe ticket.',
+      content: '✅ Ticket claimed.',
       ephemeral: true
     });
+
+  } catch (error) {
+    console.error('CLAIM TICKET ERROR:', error);
   }
-
-  if (!interaction.memberPermissions.has(PermissionFlagsBits.ManageChannels)) {
-    return interaction.reply({
-      content: '❌ You need Manage Channels to claim tickets.',
-      ephemeral: true
-    });
-  }
-
-  if (ticket.claimed_by) {
-    return interaction.reply({
-      content: '❌ This ticket is already claimed.',
-      ephemeral: true
-    });
-  }
-
-  updateTicket(interaction.channel.id, {
-    claimed_by: interaction.user.id
-  });
-
-  await interaction.channel.send({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(0x57F287)
-        .setDescription(`🙋 **${interaction.user}** has claimed this ticket.`)
-        .setTimestamp()
-    ]
-  });
-
-  return interaction.update({
-    components: [ticketButtons(true, false)]
-  });
 }
+
+/* =========================================================
+   CLOSE
+========================================================= */
 
 async function closeTicket(interaction) {
-  const ticket = getTicket(interaction.channel.id);
+  try {
+    const ticket = getTicket(interaction.channel.id);
 
-  if (!ticket) {
-    return interaction.reply({
-      content: '❌ This is not a NeoByMe ticket.',
-      ephemeral: true
-    });
-  }
-
-  if (
-    interaction.user.id !== ticket.user_id &&
-    !interaction.memberPermissions.has(PermissionFlagsBits.ManageChannels)
-  ) {
-    return interaction.reply({
-      content: '❌ You cannot close this ticket.',
-      ephemeral: true
-    });
-  }
-
-  updateTicket(interaction.channel.id, { closed: 1 });
-
-  await interaction.channel.permissionOverwrites.edit(
-    ticket.user_id,
-    {
-      SendMessages: false
+    if (!ticket) {
+      return interaction.reply({
+        content: '❌ This is not a ticket channel.',
+        ephemeral: true
+      });
     }
-  ).catch(() => {});
 
-  await interaction.channel.setName(
-    `closed-${interaction.channel.name.replace(/^closed-/, '').slice(0, 80)}`
-  ).catch(() => {});
+    const allowed =
+      ticket.user_id === interaction.user.id ||
+      isStaff(interaction);
 
-  const embed = new EmbedBuilder()
-    .setColor(0xED4245)
-    .setTitle('🔒 Ticket Closed')
-    .setDescription(
-      `This ticket has been closed by ${interaction.user}.\n\n` +
-      `Use **Reopen** if the conversation needs to continue.`
-    )
-    .setTimestamp();
+    if (!allowed) {
+      return interaction.reply({
+        content:
+          '❌ Only the ticket owner or staff can close this ticket.',
+        ephemeral: true
+      });
+    }
 
-  return interaction.update({
-    embeds: [embed],
-    components: [ticketButtons(false, true)]
-  });
+    if (ticket.closed) {
+      return interaction.reply({
+        content: '❌ This ticket is already closed.',
+        ephemeral: true
+      });
+    }
+
+    updateTicket(interaction.channel.id, {
+      closed: 1
+    });
+
+    await interaction.channel.permissionOverwrites.edit(
+      ticket.user_id,
+      {
+        SendMessages: false
+      }
+    );
+
+    await interaction.channel.setName(
+      `closed-${interaction.channel.name}`
+        .replace(/^closed-/, '')
+        .slice(0, 90)
+    );
+
+    const updated = getTicket(interaction.channel.id);
+
+    await interaction.message.edit({
+      components: [ticketButtons(updated)]
+    });
+
+    await interaction.channel.send({
+      embeds: [
+        new EmbedBuilder()
+          .setTitle('🔒 Ticket Closed')
+          .setDescription(
+            `This ticket was closed by ${interaction.user}.\n\n` +
+            `Staff can reopen or delete it.`
+          )
+          .setColor(0xed4245)
+          .setTimestamp()
+      ]
+    });
+
+    return interaction.reply({
+      content: '🔒 Ticket closed.',
+      ephemeral: true
+    });
+
+  } catch (error) {
+    console.error('CLOSE TICKET ERROR:', error);
+  }
 }
+
+/* =========================================================
+   REOPEN
+========================================================= */
 
 async function reopenTicket(interaction) {
-  const ticket = getTicket(interaction.channel.id);
-
-  if (!ticket) {
-    return interaction.reply({
-      content: '❌ This is not a NeoByMe ticket.',
-      ephemeral: true
-    });
-  }
-
-  if (!interaction.memberPermissions.has(PermissionFlagsBits.ManageChannels)) {
-    return interaction.reply({
-      content: '❌ You need Manage Channels to reopen tickets.',
-      ephemeral: true
-    });
-  }
-
-  updateTicket(interaction.channel.id, { closed: 0 });
-
-  await interaction.channel.permissionOverwrites.edit(
-    ticket.user_id,
-    {
-      ViewChannel: true,
-      SendMessages: true,
-      ReadMessageHistory: true
+  try {
+    if (!isStaff(interaction)) {
+      return interaction.reply({
+        content:
+          '❌ Only staff members can reopen tickets.',
+        ephemeral: true
+      });
     }
-  ).catch(() => {});
 
-  await interaction.channel.setName(
-    interaction.channel.name.replace(/^closed-/, '').slice(0, 100)
-  ).catch(() => {});
+    const ticket = getTicket(interaction.channel.id);
 
-  return interaction.update({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(0x57F287)
-        .setTitle('🔓 Ticket Reopened')
-        .setDescription(`This ticket was reopened by ${interaction.user}.`)
-        .setTimestamp()
-    ],
-    components: [ticketButtons(!!ticket.claimed_by, false)]
-  });
-}
+    if (!ticket) {
+      return interaction.reply({
+        content: '❌ This is not a ticket channel.',
+        ephemeral: true
+      });
+    }
 
-async function deleteTicket(interaction) {
-  const ticket = getTicket(interaction.channel.id);
+    if (!ticket.closed) {
+      return interaction.reply({
+        content: '❌ This ticket is already open.',
+        ephemeral: true
+      });
+    }
 
-  if (!ticket) {
+    updateTicket(interaction.channel.id, {
+      closed: 0
+    });
+
+    await interaction.channel.permissionOverwrites.edit(
+      ticket.user_id,
+      {
+        ViewChannel: true,
+        SendMessages: true,
+        ReadMessageHistory: true,
+        AttachFiles: true
+      }
+    );
+
+    await interaction.channel.setName(
+      interaction.channel.name
+        .replace(/^closed-/, '')
+        .slice(0, 90)
+    );
+
+    const updated = getTicket(interaction.channel.id);
+
+    await interaction.message.edit({
+      components: [ticketButtons(updated)]
+    });
+
+    await interaction.channel.send({
+      embeds: [
+        new EmbedBuilder()
+          .setTitle('🔓 Ticket Reopened')
+          .setDescription(
+            `This ticket was reopened by ${interaction.user}.`
+          )
+          .setColor(0x57f287)
+          .setTimestamp()
+      ]
+    });
+
     return interaction.reply({
-      content: '❌ This is not a NeoByMe ticket.',
+      content: '🔓 Ticket reopened.',
       ephemeral: true
     });
+
+  } catch (error) {
+    console.error('REOPEN TICKET ERROR:', error);
   }
-
-  if (!interaction.memberPermissions.has(PermissionFlagsBits.ManageChannels)) {
-    return interaction.reply({
-      content: '❌ You need Manage Channels to delete tickets.',
-      ephemeral: true
-    });
-  }
-
-  await interaction.reply({
-    content: '🗑️ Deleting this ticket...'
-  });
-
-  setTimeout(() => {
-    interaction.channel.delete().catch(() => {});
-  }, 1500);
 }
 
-async function addMember(interaction) {
-  const ticket = getTicket(interaction.channel.id);
-
-  if (!ticket) {
-    return interaction.reply({
-      content: '❌ This is not a NeoByMe ticket.',
-      ephemeral: true
-    });
-  }
-
-  return interaction.reply({
-    content: 'Use the ticket management command `/ticket add` to add a member.',
-    ephemeral: true
-  });
-}
+/* =========================================================
+   TRANSCRIPT
+========================================================= */
 
 async function transcript(interaction) {
-  const ticket = getTicket(interaction.channel.id);
+  try {
+    if (!isStaff(interaction)) {
+      return interaction.reply({
+        content:
+          '❌ Only staff members can create transcripts.',
+        ephemeral: true
+      });
+    }
 
-  if (!ticket) {
-    return interaction.reply({
-      content: '❌ This is not a NeoByMe ticket.',
+    await interaction.deferReply({
       ephemeral: true
     });
-  }
 
-  if (!interaction.memberPermissions.has(PermissionFlagsBits.ManageChannels)) {
-    return interaction.reply({
-      content: '❌ You need Manage Channels to create transcripts.',
-      ephemeral: true
+    const messages =
+      await interaction.channel.messages.fetch({
+        limit: 100
+      });
+
+    const sorted = [...messages.values()]
+      .sort(
+        (a, b) =>
+          a.createdTimestamp - b.createdTimestamp
+      );
+
+    const lines = [
+      `NeoByMe Ticket Transcript`,
+      `Channel: ${interaction.channel.name}`,
+      `Channel ID: ${interaction.channel.id}`,
+      `Created: ${new Date().toISOString()}`,
+      '',
+      '==================================================',
+      ''
+    ];
+
+    for (const message of sorted) {
+      const time =
+        new Date(message.createdTimestamp)
+          .toISOString();
+
+      const content =
+        message.content ||
+        '[Attachment/Embed/No text]';
+
+      lines.push(
+        `[${time}] ${message.author.tag}: ${content}`
+      );
+    }
+
+    const buffer = Buffer.from(
+      lines.join('\n'),
+      'utf8'
+    );
+
+    const file = new AttachmentBuilder(
+      buffer,
+      {
+        name:
+          `${interaction.channel.name}-transcript.txt`
+      }
+    );
+
+    return interaction.editReply({
+      content: '📜 Transcript generated.',
+      files: [file]
     });
+
+  } catch (error) {
+    console.error('TRANSCRIPT ERROR:', error);
+
+    if (interaction.deferred) {
+      return interaction.editReply({
+        content:
+          '❌ Failed to generate transcript.'
+      }).catch(() => {});
+    }
   }
-
-  await interaction.deferReply({ ephemeral: true });
-
-  const messages = await interaction.channel.messages.fetch({ limit: 100 });
-
-  const sorted = [...messages.values()].reverse();
-
-  const text = sorted.map(m => {
-    const time = new Date(m.createdTimestamp).toISOString();
-    return `[${time}] ${m.author.tag}: ${m.content || '[attachment/embed]'}`;
-  }).join('\n');
-
-  const file = new AttachmentBuilder(
-    Buffer.from(text || 'No messages found.', 'utf8'),
-    { name: `ticket-${interaction.channel.id}.txt` }
-  );
-
-  return interaction.editReply({
-    content: '📜 Ticket transcript:',
-    files: [file]
-  });
 }
+
+/* =========================================================
+   DELETE
+========================================================= */
+
+async function deleteTicket(interaction) {
+  try {
+    if (!isStaff(interaction)) {
+      return interaction.reply({
+        content:
+          '❌ Only staff members can delete tickets.',
+        ephemeral: true
+      });
+    }
+
+    const ticket = getTicket(interaction.channel.id);
+
+    if (!ticket) {
+      return interaction.reply({
+        content: '❌ This is not a ticket channel.',
+        ephemeral: true
+      });
+    }
+
+    await interaction.reply({
+      content: '🗑️ Deleting ticket...'
+    });
+
+    db.prepare(
+      'DELETE FROM tickets WHERE channel_id = ?'
+    ).run(interaction.channel.id);
+
+    setTimeout(() => {
+      interaction.channel.delete(
+        'Ticket deleted'
+      ).catch(error =>
+        console.error(
+          'DELETE CHANNEL ERROR:',
+          error
+        )
+      );
+    }, 1500);
+
+  } catch (error) {
+    console.error('DELETE TICKET ERROR:', error);
+  }
+}
+
+/* =========================================================
+   ADD MEMBER
+========================================================= */
+
+async function addMember(interaction) {
+  try {
+    const ticket = getTicket(interaction.channel.id);
+
+    if (!ticket) {
+      return interaction.reply({
+        content: '❌ This is not a ticket channel.',
+        ephemeral: true
+      });
+    }
+
+    const modal = new ModalBuilder()
+      .setCustomId('ticket:add_modal')
+      .setTitle('Add Member');
+
+    const input = new TextInputBuilder()
+      .setCustomId('member')
+      .setLabel('User ID or @mention')
+      .setPlaceholder('Example: 123456789012345678')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setMaxLength(30);
+
+    modal.addComponents(
+      new ActionRowBuilder().addComponents(input)
+    );
+
+    return interaction.showModal(modal);
+
+  } catch (error) {
+    console.error('ADD MEMBER ERROR:', error);
+  }
+}
+
+/* =========================================================
+   ADD MEMBER MODAL
+========================================================= */
+
+async function addMemberModal(interaction) {
+  try {
+    const ticket = getTicket(interaction.channel.id);
+
+    if (!ticket) {
+      return interaction.reply({
+        content: '❌ This is not a ticket channel.',
+        ephemeral: true
+      });
+    }
+
+    const value =
+      interaction.fields
+        .getTextInputValue('member')
+        .trim()
+        .replace(/[<@!>]/g, '');
+
+    if (!/^\d{15,25}$/.test(value)) {
+      return interaction.reply({
+        content:
+          '❌ Please enter a valid Discord user ID or mention.',
+        ephemeral: true
+      });
+    }
+
+    const member =
+      await interaction.guild.members
+        .fetch(value)
+
+      await interaction.reply({
+        content:
+          `❌ Failed to find that member.`,
+        ephemeral: true
+      });
+
+  } catch (error) {
+    console.error('ADD MEMBER MODAL ERROR:', error);
+
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({
+        content: '❌ Failed to add that member.',
+        ephemeral: true
+      }).catch(() => {});
+    }
+  }
+}
+
+/* =========================================================
+   BUTTON ROUTER
+========================================================= */
+
+async function handleButton(interaction) {
+  switch (interaction.customId) {
+    case 'ticket:claim':
+      return claimTicket(interaction);
+
+    case 'ticket:close':
+      return closeTicket(interaction);
+
+    case 'ticket:reopen':
+      return reopenTicket(interaction);
+
+    case 'ticket:transcript':
+      return transcript(interaction);
+
+    case 'ticket:delete':
+      return deleteTicket(interaction);
+
+    case 'ticket:add':
+      return addMember(interaction);
+
+    default:
+      return;
+  }
+}
+
+/* =========================================================
+   EXPORTS
+========================================================= */
 
 module.exports = {
   TYPES,
@@ -512,7 +906,9 @@ module.exports = {
   claimTicket,
   closeTicket,
   reopenTicket,
+  transcript,
   deleteTicket,
   addMember,
-  transcript
+  addMemberModal,
+  handleButton
 };
