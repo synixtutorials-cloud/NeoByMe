@@ -252,6 +252,19 @@ async function createTicket(interaction, type) {
 
   db.prepare("INSERT INTO tickets (channel_id, guild_id, user_id, type, closed, claimed_by, created_at) VALUES (?, ?, ?, ?, 0, NULL, ?)").run(channel.id, interaction.guild.id, interaction.user.id, type, Date.now());
 
+  const checkPerms = channel.permissionsFor(interaction.user.id);
+  console.log("TICKET ACCESS CHECK:", {
+    channelId: channel.id,
+    userId: interaction.user.id,
+    canView: checkPerms?.has(PermissionFlagsBits.ViewChannel),
+    canSend: checkPerms?.has(PermissionFlagsBits.SendMessages),
+    overwrites: channel.permissionOverwrites.cache.map(o => ({
+      id: o.id,
+      allow: o.allow.bitfield.toString(),
+      deny: o.deny.bitfield.toString()
+    }))
+  });
+
   const embed = new EmbedBuilder()
     .setColor(config.color)
     .setTitle(`${config.emoji} ${config.label}`)
