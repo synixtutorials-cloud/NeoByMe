@@ -340,6 +340,36 @@ async function createTicket(interaction, type) {
     });
 
     /* -----------------------------------------------------
+       PERMISSION DEBUG
+    ----------------------------------------------------- */
+
+    try {
+      const me = interaction.guild.members.me;
+      const creator = await interaction.guild.members.fetch(interaction.user.id);
+
+      console.log('===== TICKET PERMISSION DEBUG =====');
+      console.log({
+        channelId: channel.id,
+        channelName: channel.name,
+        creatorId: creator.id,
+        creatorName: creator.user.tag,
+        canView: channel.permissionsFor(creator)?.has(PermissionFlagsBits.ViewChannel),
+        canSend: channel.permissionsFor(creator)?.has(PermissionFlagsBits.SendMessages),
+        botCanView: channel.permissionsFor(me)?.has(PermissionFlagsBits.ViewChannel),
+        botCanSend: channel.permissionsFor(me)?.has(PermissionFlagsBits.SendMessages),
+        overwrites: channel.permissionOverwrites.cache.map(o => ({
+          id: o.id,
+          type: o.type,
+          allow: o.allow.bitfield.toString(),
+          deny: o.deny.bitfield.toString()
+        }))
+      });
+      console.log('===================================');
+    } catch (debugError) {
+      console.error('PERMISSION DEBUG ERROR:', debugError);
+    }
+
+    /* -----------------------------------------------------
        DATABASE
     ----------------------------------------------------- */
 
