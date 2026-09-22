@@ -75,6 +75,9 @@ client.on(Events.InteractionCreate, async i => {
         return tickets.reopenTicket(i);
 
       if (action === 'delete')
+
+      if (action === 'transcript')
+        return tickets.transcript(i);
         return tickets.deleteTicket(i);
 
       return;
