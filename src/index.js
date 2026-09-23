@@ -11,6 +11,7 @@ const {
 
 const config = require('./config');
 const tickets = require('./tickets');
+const giveaways = require('./giveaways');
 
 const client = new Client({
   intents: [
@@ -71,6 +72,10 @@ client.on(Events.InteractionCreate, async i => {
     // =========================
     // TICKET BUTTONS
     // =========================
+    if (i.isButton() && i.customId.startsWith('giveaway:enter:')) {
+      return giveaways.enterGiveaway(i);
+    }
+
     if (i.isButton() && i.customId.startsWith('ticket:')) {
       return tickets.handleButton(i);
     }
@@ -187,39 +192,11 @@ client.on(Events.InteractionCreate, async i => {
     // =========================
     // /gcreate
     // =========================
-    if (n === 'gcreate') {
-      const time = i.options.getString('time', true);
-      const winners = i.options.getInteger('winners', true);
-      const prize = i.options.getString('prize', true);
-      const message =
-        i.options.getString('message') ||
-        'React with 🎉 to enter!';
-
-      const ping = i.options.getBoolean('ping') || false;
-
-      const giveawayEmbed = new EmbedBuilder()
-        .setTitle('🎉 GIVEAWAY')
-        .setDescription(
-          `${message}\n\n🎁 **Prize:** ${prize}\n🏆 **Winners:** ${winners}\n⏱️ **Duration:** ${time}\n\nReact with 🎉 to enter!`
-        )
-        .setColor(0xffd700)
-        .setFooter({
-          text: `Hosted by ${i.user.tag}`
-        })
-        .setTimestamp();
-
-      const msg = await i.channel.send({
-        content: ping ? '@everyone' : undefined,
-        embeds: [giveawayEmbed]
-      });
-
-      await msg.react('🎉');
-
-      return i.reply({
-        content: '✅ Giveaway created.',
-        ephemeral: true
-      });
-    }
+    if (n === 'gcreate') return giveaways.createGiveaway(i);
+    if (n === 'gend') return giveaways.gend(i);
+    if (n === 'gstart') return giveaways.gstart(i);
+    if (n === 'greroll') return giveaways.greroll(i);
+    if (n === 'gwinner') return giveaways.gwinner(i);
   } catch (err) {
     console.error('Interaction error:', err);
 

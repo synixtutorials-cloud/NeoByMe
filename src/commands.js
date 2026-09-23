@@ -79,5 +79,31 @@ module.exports = [
       o.setName('ping')
         .setDescription('Ping winners')
     )
+,
+
+  new SlashCommandBuilder()
+    .setName('gend')
+    .setDescription('End the latest active giveaway')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString()),
+
+  new SlashCommandBuilder()
+    .setName('gstart')
+    .setDescription('Choose the winner before time ends')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString()),
+
+  new SlashCommandBuilder()
+    .setName('greroll')
+    .setDescription('Reroll the winner of the latest giveaway')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString()),
+
+  new SlashCommandBuilder()
+    .setName('gwinner')
+    .setDescription('Manually select a winner')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString())
+    .addUserOption(o =>
+      o.setName('username')
+        .setDescription('User to select as winner')
+        .setRequired(true)
+    )
 
 ];
