@@ -72,7 +72,25 @@ async function sendWelcomeMessage(member) {
   }).catch(() => {});
 }
 
+async function welcomeTest(interaction) {
+  const config = getWelcomeConfig(interaction.guild.id);
+  if (!config) {
+    return interaction.reply({
+      content: '❌ Welcome message is not set up yet. Use /welcome panel first.',
+      ephemeral: true
+    });
+  }
+
+  await sendWelcomeMessage(interaction.member);
+
+  return interaction.reply({
+    content: '✅ Test welcome message sent.',
+    ephemeral: true
+  });
+}
+
 module.exports = {
   welcomePanel,
+  welcomeTest,
   sendWelcomeMessage
 };

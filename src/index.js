@@ -217,6 +217,7 @@ client.on(Events.InteractionCreate, async i => {
     if (n === 'autorole' && i.options.getSubcommand() === 'add') return autorole.autoroleAdd(i);
     if (n === 'autorole' && i.options.getSubcommand() === 'add-all') return autorole.autoroleAddAll(i);
     if (n === 'welcome' && i.options.getSubcommand() === 'panel') return welcome.welcomePanel(i);
+    if (n === 'welcome' && i.options.getSubcommand() === 'test') return welcome.welcomeTest(i);
   } catch (err) {
     console.error('Interaction error:', err);
 

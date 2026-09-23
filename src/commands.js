@@ -185,4 +185,8 @@ module.exports = [
         .addBooleanOption(o => o.setName('ping').setDescription('Ping the user who joined'))
         .addStringOption(o => o.setName('image').setDescription('Banner image URL'))
     )
+    .addSubcommand(sub =>
+      sub.setName('test')
+        .setDescription('Send a test welcome message')
+    )
 ];
