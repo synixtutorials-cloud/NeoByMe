@@ -14,6 +14,7 @@ const tickets = require('./tickets');
 const giveaways = require('./giveaways');
 const counting = require('./counting');
 const polls = require('./polls');
+const economy = require('./economy');
 
 const client = new Client({
   intents: [
@@ -80,6 +81,10 @@ client.on(Events.InteractionCreate, async i => {
 
     if (i.isButton() && i.customId.startsWith('poll:vote:')) {
       return polls.votePoll(i);
+    }
+
+    if (i.isButton() && i.customId.startsWith('mine:')) {
+      return economy.handleMineButton(i);
     }
 
     if (i.isButton() && i.customId.startsWith('ticket:')) {
@@ -226,6 +231,8 @@ client.on(Events.InteractionCreate, async i => {
 client.on(Events.MessageCreate, async message => {
   if (message.author.bot) return;
   await counting.handleCountingMessage(message);
+  const handledByEconomy = await economy.handleNeoChat(message);
+  if (handledByEconomy) return;
 
 
   // Basic anti-link example
