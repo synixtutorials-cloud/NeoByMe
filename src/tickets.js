@@ -273,7 +273,11 @@ async function createTicket(interaction, type) {
        FIND CATEGORY
     ----------------------------------------------------- */
 
-    let category =
+    const FIXED_CATEGORY_ID = '1545833387372314715';
+
+    let category = interaction.guild.channels.cache.get(FIXED_CATEGORY_ID);
+
+    let __unused =
       interaction.guild.channels.cache.find(
         channel =>
           channel.type === ChannelType.GuildCategory &&
