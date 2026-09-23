@@ -38,6 +38,8 @@ const embed = (title, description) =>
 
 client.once(Events.ClientReady, async () => {
   console.log(`NeoByMe online as ${client.user.tag}`);
+  console.log('Bot is in these servers:');
+  client.guilds.cache.forEach(g => console.log(`  - ${g.name} (ID: ${g.id})`));
   client.user.setActivity('/help • NeoByMe', { type: 0 });
 });
 
