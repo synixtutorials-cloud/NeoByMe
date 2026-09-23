@@ -106,4 +106,27 @@ module.exports = [
         .setRequired(true)
     )
 
+,
+
+  new SlashCommandBuilder()
+    .setName('count')
+    .setDescription('Counting game setup')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString())
+    .addSubcommand(sub =>
+      sub.setName('setup')
+        .setDescription('Set up the counting channel')
+        .addChannelOption(o =>
+          o.setName('channel')
+            .setDescription('Channel where counting happens')
+            .setRequired(true)
+        )
+        .addIntegerOption(o =>
+          o.setName('start')
+            .setDescription('Starting number (default 1)')
+        )
+        .addStringOption(o =>
+          o.setName('message')
+            .setDescription('Custom reset message. Use {user} and {number}')
+        )
+    )
 ];

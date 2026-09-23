@@ -12,6 +12,7 @@ const {
 const config = require('./config');
 const tickets = require('./tickets');
 const giveaways = require('./giveaways');
+const counting = require('./counting');
 
 const client = new Client({
   intents: [
@@ -197,6 +198,7 @@ client.on(Events.InteractionCreate, async i => {
     if (n === 'gstart') return giveaways.gstart(i);
     if (n === 'greroll') return giveaways.greroll(i);
     if (n === 'gwinner') return giveaways.gwinner(i);
+    if (n === 'count' && i.options.getSubcommand() === 'setup') return counting.setupCounting(i);
   } catch (err) {
     console.error('Interaction error:', err);
 
@@ -215,6 +217,8 @@ client.on(Events.InteractionCreate, async i => {
 
 client.on(Events.MessageCreate, async message => {
   if (message.author.bot) return;
+  await counting.handleCountingMessage(message);
+
 
   // Basic anti-link example
   const cfg = config || {};
