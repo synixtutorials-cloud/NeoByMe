@@ -155,4 +155,20 @@ module.exports = [
       sub.setName('result')
         .setDescription('Show the latest poll result')
     )
+,
+
+  new SlashCommandBuilder()
+    .setName('autorole')
+    .setDescription('Autorole management')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString())
+    .addSubcommand(sub =>
+      sub.setName('add')
+        .setDescription('Add a role to be auto-given to new members')
+        .addRoleOption(o => o.setName('role').setDescription('Role to auto-assign').setRequired(true))
+    )
+    .addSubcommand(sub =>
+      sub.setName('add-all')
+        .setDescription('Add a role to all current members and set it as autorole')
+        .addRoleOption(o => o.setName('role').setDescription('Role to add to everyone').setRequired(true))
+    )
 ];
