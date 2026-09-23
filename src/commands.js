@@ -129,4 +129,30 @@ module.exports = [
             .setDescription('Custom reset message. Use {user} and {number}')
         )
     )
+,
+
+  new SlashCommandBuilder()
+    .setName('poll')
+    .setDescription('Poll commands')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString())
+    .addSubcommand(sub =>
+      sub.setName('create')
+        .setDescription('Create a poll')
+        .addStringOption(o => o.setName('title').setDescription('Poll title').setRequired(true))
+        .addChannelOption(o => o.setName('channel').setDescription('Channel to post the poll').setRequired(true))
+        .addStringOption(o => o.setName('option1').setDescription('Option 1').setRequired(true))
+        .addStringOption(o => o.setName('option2').setDescription('Option 2').setRequired(true))
+        .addStringOption(o => o.setName('option3').setDescription('Option 3'))
+        .addStringOption(o => o.setName('option4').setDescription('Option 4'))
+        .addStringOption(o => o.setName('option5').setDescription('Option 5'))
+        .addStringOption(o => o.setName('time').setDescription('Optional duration such as 10m, 1h, 2d'))
+    )
+    .addSubcommand(sub =>
+      sub.setName('end')
+        .setDescription('End the latest poll')
+    )
+    .addSubcommand(sub =>
+      sub.setName('result')
+        .setDescription('Show the latest poll result')
+    )
 ];

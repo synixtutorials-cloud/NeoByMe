@@ -13,6 +13,7 @@ const config = require('./config');
 const tickets = require('./tickets');
 const giveaways = require('./giveaways');
 const counting = require('./counting');
+const polls = require('./polls');
 
 const client = new Client({
   intents: [
@@ -75,6 +76,10 @@ client.on(Events.InteractionCreate, async i => {
     // =========================
     if (i.isButton() && i.customId.startsWith('giveaway:enter:')) {
       return giveaways.enterGiveaway(i);
+    }
+
+    if (i.isButton() && i.customId.startsWith('poll:vote:')) {
+      return polls.votePoll(i);
     }
 
     if (i.isButton() && i.customId.startsWith('ticket:')) {
@@ -199,6 +204,9 @@ client.on(Events.InteractionCreate, async i => {
     if (n === 'greroll') return giveaways.greroll(i);
     if (n === 'gwinner') return giveaways.gwinner(i);
     if (n === 'count' && i.options.getSubcommand() === 'setup') return counting.setupCounting(i);
+    if (n === 'poll' && i.options.getSubcommand() === 'create') return polls.createPoll(i);
+    if (n === 'poll' && i.options.getSubcommand() === 'end') return polls.pollEnd(i);
+    if (n === 'poll' && i.options.getSubcommand() === 'result') return polls.pollResult(i);
   } catch (err) {
     console.error('Interaction error:', err);
 
