@@ -428,6 +428,11 @@ async function createTicket(interaction, type) {
       components: [ticketButtons(ticket)]
     });
 
+
+
+
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     await interaction.editReply({
       content:
         `✅ Your ticket has been created:\n\n` +
