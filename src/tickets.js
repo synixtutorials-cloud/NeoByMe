@@ -352,6 +352,7 @@ async function createTicket(interaction, type) {
       const creator = await interaction.guild.members.fetch(interaction.user.id);
 
       console.log('===== TICKET PERMISSION DEBUG =====');
+      console.log('Channel type:', channel.type, 'Parent ID:', channel.parentId, 'Guild ID:', channel.guildId);
       console.log({
         channelId: channel.id,
         channelName: channel.name,
