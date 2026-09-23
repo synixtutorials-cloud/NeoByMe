@@ -171,4 +171,18 @@ module.exports = [
         .setDescription('Add a role to all current members and set it as autorole')
         .addRoleOption(o => o.setName('role').setDescription('Role to add to everyone').setRequired(true))
     )
+,
+
+  new SlashCommandBuilder()
+    .setName('welcome')
+    .setDescription('Welcome message management')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString())
+    .addSubcommand(sub =>
+      sub.setName('panel')
+        .setDescription('Set up the welcome message')
+        .addChannelOption(o => o.setName('channel').setDescription('Channel for welcome messages').setRequired(true))
+        .addStringOption(o => o.setName('message').setDescription('Message. Use {user} {username} {server} {membercount}'))
+        .addBooleanOption(o => o.setName('ping').setDescription('Ping the user who joined'))
+        .addStringOption(o => o.setName('image').setDescription('Banner image URL'))
+    )
 ];

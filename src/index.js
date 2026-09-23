@@ -16,6 +16,7 @@ const counting = require('./counting');
 const polls = require('./polls');
 const economy = require('./economy');
 const autorole = require('./autorole');
+const welcome = require('./welcome');
 
 const client = new Client({
   intents: [
@@ -215,6 +216,7 @@ client.on(Events.InteractionCreate, async i => {
     if (n === 'poll' && i.options.getSubcommand() === 'result') return polls.pollResult(i);
     if (n === 'autorole' && i.options.getSubcommand() === 'add') return autorole.autoroleAdd(i);
     if (n === 'autorole' && i.options.getSubcommand() === 'add-all') return autorole.autoroleAddAll(i);
+    if (n === 'welcome' && i.options.getSubcommand() === 'panel') return welcome.welcomePanel(i);
   } catch (err) {
     console.error('Interaction error:', err);
 
@@ -263,6 +265,7 @@ client.on(Events.MessageCreate, async message => {
 client.on(Events.GuildMemberAdd, async member => {
   console.log(`${member.user.tag} joined ${member.guild.name}`);
   await autorole.handleMemberJoinAutorole(member);
+  await welcome.sendWelcomeMessage(member);
 });
 
 client.on(Events.GuildMemberRemove, async member => {
