@@ -18,6 +18,7 @@ const economy = require('./economy');
 const autorole = require('./autorole');
 const welcome = require('./welcome');
 const leveling = require('./leveling');
+const invites = require('./invites');
 
 const client = new Client({
   intents: [
@@ -47,6 +48,7 @@ client.once(Events.ClientReady, async () => {
   console.log(`NeoByMe online as ${client.user.tag}`);
   console.log('Bot is in these servers:');
   client.guilds.cache.forEach(g => console.log(`  - ${g.name} (ID: ${g.id})`));
+  await invites.cacheAllGuildInvites(client);
   client.user.setActivity('/help • NeoByMe', { type: 0 });
 });
 
@@ -222,6 +224,7 @@ client.on(Events.InteractionCreate, async i => {
     if (n === 'level' && i.options.getSubcommand() === 'setchannel') return leveling.setLevelChannel(i);
     if (n === 'rank') return leveling.showRank(i);
     if (n === 'leaderboard') return leveling.showLeaderboard(i);
+    if (n === 'info' || n === 'i') return invites.showInfo(i);
   } catch (err) {
     console.error('Interaction error:', err);
 
@@ -270,12 +273,14 @@ client.on(Events.MessageCreate, async message => {
 
 client.on(Events.GuildMemberAdd, async member => {
   console.log(`${member.user.tag} joined ${member.guild.name}`);
+  await invites.handleMemberJoinInvite(member);
   await autorole.handleMemberJoinAutorole(member);
   await welcome.sendWelcomeMessage(member);
 });
 
 client.on(Events.GuildMemberRemove, async member => {
   console.log(`${member.user.tag} left ${member.guild.name}`);
+  invites.handleMemberLeaveInvite(member);
 });
 
 process.on('unhandledRejection', console.error);

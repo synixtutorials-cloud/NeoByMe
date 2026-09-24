@@ -209,4 +209,15 @@ module.exports = [
   new SlashCommandBuilder()
     .setName('leaderboard')
     .setDescription('Show the server leaderboard')
+,
+
+  new SlashCommandBuilder()
+    .setName('info')
+    .setDescription('View info about yourself or another member')
+    .addUserOption(o => o.setName('user').setDescription('User to view info about')),
+
+  new SlashCommandBuilder()
+    .setName('i')
+    .setDescription('View info about yourself or another member (shorthand)')
+    .addUserOption(o => o.setName('user').setDescription('User to view info about'))
 ];
