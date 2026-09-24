@@ -17,6 +17,7 @@ const polls = require('./polls');
 const economy = require('./economy');
 const autorole = require('./autorole');
 const welcome = require('./welcome');
+const leveling = require('./leveling');
 
 const client = new Client({
   intents: [
@@ -218,6 +219,9 @@ client.on(Events.InteractionCreate, async i => {
     if (n === 'autorole' && i.options.getSubcommand() === 'add-all') return autorole.autoroleAddAll(i);
     if (n === 'welcome' && i.options.getSubcommand() === 'panel') return welcome.welcomePanel(i);
     if (n === 'welcome' && i.options.getSubcommand() === 'test') return welcome.welcomeTest(i);
+    if (n === 'level' && i.options.getSubcommand() === 'setchannel') return leveling.setLevelChannel(i);
+    if (n === 'rank') return leveling.showRank(i);
+    if (n === 'leaderboard') return leveling.showLeaderboard(i);
   } catch (err) {
     console.error('Interaction error:', err);
 
@@ -239,6 +243,7 @@ client.on(Events.MessageCreate, async message => {
   await counting.handleCountingMessage(message);
   const handledByEconomy = await economy.handleNeoChat(message);
   if (handledByEconomy) return;
+  await leveling.handleLevelingMessage(message);
 
 
   // Basic anti-link example

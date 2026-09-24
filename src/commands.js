@@ -189,4 +189,24 @@ module.exports = [
       sub.setName('test')
         .setDescription('Send a test welcome message')
     )
+,
+
+  new SlashCommandBuilder()
+    .setName('level')
+    .setDescription('Leveling system settings')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString())
+    .addSubcommand(sub =>
+      sub.setName('setchannel')
+        .setDescription('Set the channel for level-up announcements')
+        .addChannelOption(o => o.setName('channel').setDescription('Channel for level-up messages').setRequired(true))
+    ),
+
+  new SlashCommandBuilder()
+    .setName('rank')
+    .setDescription('Show your or another user rank')
+    .addUserOption(o => o.setName('user').setDescription('User to check')),
+
+  new SlashCommandBuilder()
+    .setName('leaderboard')
+    .setDescription('Show the server leaderboard')
 ];
