@@ -220,4 +220,16 @@ module.exports = [
     .setName('i')
     .setDescription('View info about yourself or another member (shorthand)')
     .addUserOption(o => o.setName('user').setDescription('User to view info about'))
+,
+
+  new SlashCommandBuilder()
+    .setName('nuke')
+    .setDescription('Anti-nuke settings')
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator.toString())
+    .addSubcommand(sub =>
+      sub.setName('set')
+        .setDescription('Exempt a user or role from anti-nuke detection')
+        .addUserOption(o => o.setName('user').setDescription('User to exempt'))
+        .addRoleOption(o => o.setName('role').setDescription('Role to exempt'))
+    )
 ];

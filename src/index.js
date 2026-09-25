@@ -19,6 +19,7 @@ const autorole = require('./autorole');
 const welcome = require('./welcome');
 const leveling = require('./leveling');
 const invites = require('./invites');
+const antinuke = require('./antinuke');
 
 const client = new Client({
   intents: [
@@ -225,6 +226,7 @@ client.on(Events.InteractionCreate, async i => {
     if (n === 'rank') return leveling.showRank(i);
     if (n === 'leaderboard') return leveling.showLeaderboard(i);
     if (n === 'info' || n === 'i') return invites.showInfo(i);
+    if (n === 'nuke' && i.options.getSubcommand() === 'set') return antinuke.setExempt(i);
   } catch (err) {
     console.error('Interaction error:', err);
 
@@ -281,6 +283,14 @@ client.on(Events.GuildMemberAdd, async member => {
 client.on(Events.GuildMemberRemove, async member => {
   console.log(`${member.user.tag} left ${member.guild.name}`);
   invites.handleMemberLeaveInvite(member);
+});
+
+client.on(Events.ChannelDelete, async channel => {
+  await antinuke.handleChannelDelete(channel);
+});
+
+client.on(Events.RoleDelete, async role => {
+  await antinuke.handleRoleDelete(role);
 });
 
 process.on('unhandledRejection', console.error);
