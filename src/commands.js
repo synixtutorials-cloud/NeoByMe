@@ -232,4 +232,24 @@ module.exports = [
         .addUserOption(o => o.setName('user').setDescription('User to exempt'))
         .addRoleOption(o => o.setName('role').setDescription('Role to exempt'))
     )
+,
+
+  new SlashCommandBuilder()
+    .setName('link')
+    .setDescription('Link filter settings')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString())
+    .addSubcommand(sub =>
+      sub.setName('enable')
+        .setDescription('Enable the link filter')
+    )
+    .addSubcommand(sub =>
+      sub.setName('disable')
+        .setDescription('Disable the link filter')
+    )
+    .addSubcommand(sub =>
+      sub.setName('whitelist')
+        .setDescription('Whitelist a user or role to send links')
+        .addUserOption(o => o.setName('user').setDescription('User to whitelist'))
+        .addRoleOption(o => o.setName('role').setDescription('Role to whitelist'))
+    )
 ];

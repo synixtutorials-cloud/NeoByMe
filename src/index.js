@@ -20,6 +20,7 @@ const welcome = require('./welcome');
 const leveling = require('./leveling');
 const invites = require('./invites');
 const antinuke = require('./antinuke');
+const linkfilter = require('./linkfilter');
 
 const client = new Client({
   intents: [
@@ -227,6 +228,9 @@ client.on(Events.InteractionCreate, async i => {
     if (n === 'leaderboard') return leveling.showLeaderboard(i);
     if (n === 'info' || n === 'i') return invites.showInfo(i);
     if (n === 'nuke' && i.options.getSubcommand() === 'set') return antinuke.setExempt(i);
+    if (n === 'link' && i.options.getSubcommand() === 'enable') return linkfilter.enableFilter(i);
+    if (n === 'link' && i.options.getSubcommand() === 'disable') return linkfilter.disableFilter(i);
+    if (n === 'link' && i.options.getSubcommand() === 'whitelist') return linkfilter.whitelistAdd(i);
   } catch (err) {
     console.error('Interaction error:', err);
 
@@ -249,6 +253,7 @@ client.on(Events.MessageCreate, async message => {
   const handledByEconomy = await economy.handleNeoChat(message);
   if (handledByEconomy) return;
   await leveling.handleLevelingMessage(message);
+  await linkfilter.handleLinkFilterMessage(message);
 
 
   // Basic anti-link example
