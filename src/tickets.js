@@ -185,6 +185,7 @@ async function createTicket(interaction, type) {
       VALUES (?, ?, ?, ?, NULL, 0, ?)
     `).run(channel.id, interaction.guild.id, interaction.user.id, type, Date.now());
 
+    console.log('TICKET CREATED:', channel.id, 'parent:', channel.parentId, 'guild:', channel.guildId);
     const ticket = getTicket(channel.id);
 
     const embed = new EmbedBuilder()
