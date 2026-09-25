@@ -272,4 +272,56 @@ module.exports = [
         .setDescription('Restore a backup (recreates channels/roles)')
         .addStringOption(o => o.setName('name').setDescription('Backup name to restore').setRequired(true))
     )
+,
+
+  new SlashCommandBuilder()
+    .setName('warn')
+    .setDescription('Warn a member')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers.toString())
+    .addUserOption(o => o.setName('user').setDescription('User to warn').setRequired(true))
+    .addStringOption(o => o.setName('reason').setDescription('Reason for the warning').setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName('warnings')
+    .setDescription('View warnings for a member')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers.toString())
+    .addUserOption(o => o.setName('user').setDescription('User to check').setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName('kick')
+    .setDescription('Kick a member')
+    .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers.toString())
+    .addUserOption(o => o.setName('user').setDescription('User to kick').setRequired(true))
+    .addStringOption(o => o.setName('reason').setDescription('Reason for the kick')),
+
+  new SlashCommandBuilder()
+    .setName('ban')
+    .setDescription('Ban a member')
+    .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers.toString())
+    .addUserOption(o => o.setName('user').setDescription('User to ban').setRequired(true))
+    .addStringOption(o => o.setName('reason').setDescription('Reason for the ban')),
+
+  new SlashCommandBuilder()
+    .setName('mute')
+    .setDescription('Timeout a member')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers.toString())
+    .addUserOption(o => o.setName('user').setDescription('User to mute').setRequired(true))
+    .addStringOption(o => o.setName('duration').setDescription('Duration such as 10m, 1h, 1d').setRequired(true))
+    .addStringOption(o => o.setName('reason').setDescription('Reason for the mute')),
+
+  new SlashCommandBuilder()
+    .setName('say')
+    .setDescription('Make the bot say a message')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString())
+    .addStringOption(o => o.setName('message').setDescription('Message to send').setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName('modlog')
+    .setDescription('Mod-log settings')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString())
+    .addSubcommand(sub =>
+      sub.setName('setchannel')
+        .setDescription('Set the mod-log channel')
+        .addChannelOption(o => o.setName('channel').setDescription('Channel for mod logs').setRequired(true))
+    )
 ];

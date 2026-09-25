@@ -23,6 +23,7 @@ const antinuke = require('./antinuke');
 const linkfilter = require('./linkfilter');
 const backup = require('./backup');
 const activity = require('./activity');
+const moderation = require('./moderation');
 
 const client = new Client({
   intents: [
@@ -236,6 +237,13 @@ client.on(Events.InteractionCreate, async i => {
     if (n === 'backup' && i.options.getSubcommand() === 'create') return backup.createBackup(i);
     if (n === 'backup' && i.options.getSubcommand() === 'list') return backup.listBackups(i);
     if (n === 'backup' && i.options.getSubcommand() === 'restore') return backup.restoreBackup(i);
+    if (n === 'warn') return moderation.warnUser(i);
+    if (n === 'warnings') return moderation.showWarnings(i);
+    if (n === 'kick') return moderation.kickUser(i);
+    if (n === 'ban') return moderation.banUser(i);
+    if (n === 'mute') return moderation.muteUser(i);
+    if (n === 'say') return moderation.sayMessage(i);
+    if (n === 'modlog' && i.options.getSubcommand() === 'setchannel') return moderation.setModLogChannel(i);
   } catch (err) {
     console.error('Interaction error:', err);
 
