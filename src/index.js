@@ -22,6 +22,7 @@ const invites = require('./invites');
 const antinuke = require('./antinuke');
 const linkfilter = require('./linkfilter');
 const backup = require('./backup');
+const activity = require('./activity');
 
 const client = new Client({
   intents: [
@@ -258,6 +259,7 @@ client.on(Events.MessageCreate, async message => {
   if (handledByEconomy) return;
   await leveling.handleLevelingMessage(message);
   await linkfilter.handleLinkFilterMessage(message);
+  await activity.handleActivityMessage(message);
 
 
   // Basic anti-link example
