@@ -21,6 +21,7 @@ const leveling = require('./leveling');
 const invites = require('./invites');
 const antinuke = require('./antinuke');
 const linkfilter = require('./linkfilter');
+const backup = require('./backup');
 
 const client = new Client({
   intents: [
@@ -231,6 +232,9 @@ client.on(Events.InteractionCreate, async i => {
     if (n === 'link' && i.options.getSubcommand() === 'enable') return linkfilter.enableFilter(i);
     if (n === 'link' && i.options.getSubcommand() === 'disable') return linkfilter.disableFilter(i);
     if (n === 'link' && i.options.getSubcommand() === 'whitelist') return linkfilter.whitelistAdd(i);
+    if (n === 'backup' && i.options.getSubcommand() === 'create') return backup.createBackup(i);
+    if (n === 'backup' && i.options.getSubcommand() === 'list') return backup.listBackups(i);
+    if (n === 'backup' && i.options.getSubcommand() === 'restore') return backup.restoreBackup(i);
   } catch (err) {
     console.error('Interaction error:', err);
 

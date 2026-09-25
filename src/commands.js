@@ -252,4 +252,24 @@ module.exports = [
         .addUserOption(o => o.setName('user').setDescription('User to whitelist'))
         .addRoleOption(o => o.setName('role').setDescription('Role to whitelist'))
     )
+,
+
+  new SlashCommandBuilder()
+    .setName('backup')
+    .setDescription('Server backup management')
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator.toString())
+    .addSubcommand(sub =>
+      sub.setName('create')
+        .setDescription('Create a server backup')
+        .addStringOption(o => o.setName('name').setDescription('Backup name').setRequired(true))
+    )
+    .addSubcommand(sub =>
+      sub.setName('list')
+        .setDescription('List all backups')
+    )
+    .addSubcommand(sub =>
+      sub.setName('restore')
+        .setDescription('Restore a backup (recreates channels/roles)')
+        .addStringOption(o => o.setName('name').setDescription('Backup name to restore').setRequired(true))
+    )
 ];
