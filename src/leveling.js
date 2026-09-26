@@ -90,7 +90,7 @@ async function handleLevelingMessage(message) {
 
     if (targetChannel) {
       const embed = new EmbedBuilder()
-        .setTitle('🎉 Level Up!')
+        .setTitle('<a:levelup:1553245921582653761> Level Up!')
         .setDescription(
           `Congratulations ${message.author}, you have reached level **${newLevel}**!`
         )

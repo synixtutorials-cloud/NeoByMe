@@ -61,7 +61,7 @@ async function handleCountingMessage(message) {
       .run(message.guild.id);
     const failMsg = setup.reset_message
       ? setup.reset_message.replaceAll('{user}', message.author.toString()).replaceAll('{number}', num)
-      : `❌ ${message.author} counted twice in a row! Count reset to **1**.`;
+      : `<a:countross:1553244188009824286> ${message.author} counted twice in a row! Count reset to **1**.`;
     await message.channel.send(failMsg);
     return;
   }
@@ -72,7 +72,7 @@ async function handleCountingMessage(message) {
       .run(message.guild.id);
     const failMsg = setup.reset_message
       ? setup.reset_message.replaceAll('{user}', message.author.toString()).replaceAll('{number}', num)
-      : `❌ ${message.author} said the wrong number! Expected **${setup.current_number}**. Count reset to **1**.`;
+      : `<a:countross:1553244188009824286> ${message.author} said the wrong number! Expected **${setup.current_number}**. Count reset to **1**.`;
     await message.channel.send(failMsg);
     return;
   }
@@ -80,7 +80,7 @@ async function handleCountingMessage(message) {
   db.prepare('UPDATE counting SET current_number = ?, last_user_id = ? WHERE guild_id = ?')
     .run(num + 1, message.author.id, message.guild.id);
 
-  await message.react('✅').catch(() => {});
+  await message.react('<a:countick:1553244156581904494>').catch(() => {});
 }
 
 module.exports = {
