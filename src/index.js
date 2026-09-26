@@ -97,6 +97,10 @@ client.on(Events.InteractionCreate, async i => {
       return economy.handleMineButton(i);
     }
 
+    if (i.isButton() && i.customId.startsWith('bj:')) {
+      return economy.handleBlackjackButton(i);
+    }
+
     if (i.isButton() && i.customId.startsWith('ticket:')) {
       return tickets.handleButton(i);
     }
