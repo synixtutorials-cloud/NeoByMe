@@ -58,7 +58,7 @@ function giveawayRow(messageId) {
     new ButtonBuilder()
       .setCustomId(`giveaway:enter:${messageId}`)
       .setLabel('Enter giveaway')
-      .setEmoji('⚔️')
+      .setEmoji({ id: '1553230160688582748', name: 'rocketup', animated: true })
       .setStyle(ButtonStyle.Primary)
   );
 }
@@ -86,7 +86,7 @@ async function refreshGiveawayEmbed(client, giveaway) {
   });
 
   const embed = new EmbedBuilder()
-    .setTitle(giveaway.ended ? '🎉 GIVEAWAY ENDED' : '🎉 GIVEAWAY')
+    .setTitle(giveaway.ended ? '<a:celeb:1553233013381271633> GIVEAWAY ENDED' : '<a:celeb:1553233013381271633> GIVEAWAY')
     .setDescription(description)
     .setColor(giveaway.ended ? 0x808080 : 0xffd700)
     .setFooter({ text: `Hosted by ${host ? host.tag : 'Unknown'}` })
@@ -106,7 +106,7 @@ async function createGiveaway(interaction) {
   const prize = interaction.options.getString('prize', true);
   const messageTemplate =
     interaction.options.getString('message') ||
-    '<a:giveaway:1552662290573299722> **Prize:** {prize}\n🏆 **Winners:** {winners}\n👥 **Entries:** {enteredpeople}\n⏱️ **Ends:** {time}\n\nClick the button below to enter!';
+    '<a:next:1553230272479240222> **Prize:** {prize}\n<a:next:1553230272479240222> **Winners:** {winners}\n<a:next:1553230272479240222> **Entries:** {enteredpeople}\n<a:next:1553230272479240222> **Ends:** {time}\n\n<a:fire~1:1553230331488903248> Click the button below to enter!';
   const ping = interaction.options.getBoolean('ping') || false;
 
   const durationMs = parseDuration(timeStr);
@@ -120,7 +120,7 @@ async function createGiveaway(interaction) {
   const endTime = Date.now() + durationMs;
 
   const placeholderEmbed = new EmbedBuilder()
-    .setTitle('🎉 GIVEAWAY')
+    .setTitle('<a:celeb:1553233013381271633> GIVEAWAY')
     .setDescription('Setting up...')
     .setColor(0xffd700);
 
