@@ -106,7 +106,7 @@ async function createGiveaway(interaction) {
   const prize = interaction.options.getString('prize', true);
   const messageTemplate =
     interaction.options.getString('message') ||
-    '<a:next:1553230272479240222> **Prize:** {prize}\n<a:next:1553230272479240222> **Winners:** {winners}\n<a:next:1553230272479240222> **Entries:** {enteredpeople}\n<a:next:1553230272479240222> **Ends:** {time}\n\n<a:fire~1:1553230331488903248> Click the button below to enter!';
+    '<a:next:1553230272479240222> **Prize:** {prize}\n<a:next:1553230272479240222> **Winners:** {winners}\n<a:next:1553230272479240222> **Entries:** {enteredpeople}\n<a:next:1553230272479240222> **Ends:** {time}\n\n<a:flaming:1553230331488903248> Click the button below to enter!';
   const ping = interaction.options.getBoolean('ping') || false;
 
   const durationMs = parseDuration(timeStr);
