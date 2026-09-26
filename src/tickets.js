@@ -180,13 +180,7 @@ async function createTicket(interaction, type) {
       ]
     });
 
-    db.prepare(`
-      INSERT INTO tickets (channel_id, guild_id, user_id, type, claimed_by, closed, created_at)
-      VALUES (?, ?, ?, ?, NULL, 0, ?)
-    `).run(channel.id, interaction.guild.id, interaction.user.id, type, Date.now());
-
     console.log('TICKET CREATED:', channel.id, 'parent:', channel.parentId, 'guild:', channel.guildId);
-    const ticket = getTicket(channel.id);
 
     const embed = new EmbedBuilder()
       .setTitle(`${config.emoji} ${config.label} Ticket`)
@@ -205,9 +199,35 @@ async function createTicket(interaction, type) {
       .setTimestamp()
       .setFooter({ text: 'NeoByMe Ticket System' });
 
-    await channel.send({ content: `${interaction.user}`, embeds: [embed], components: [ticketButtons(ticket)] });
+    await new Promise(resolve => setTimeout(resolve, 800));
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const placeholderTicket = { closed: 0, claimed_by: null };
+    let sendSucceeded = false;
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await channel.send({ content: `${interaction.user}`, embeds: [embed], components: [ticketButtons(placeholderTicket)] });
+        sendSucceeded = true;
+        break;
+      } catch (sendError) {
+        console.error(`SEND ATTEMPT ${attempt} FAILED:`, sendError.message);
+        if (attempt < 3) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      }
+    }
+
+    if (!sendSucceeded) {
+      await channel.delete('Failed to initialize ticket').catch(() => {});
+      throw new Error('Could not send initial ticket message after retries');
+    }
+
+    db.prepare(`
+      INSERT INTO tickets (channel_id, guild_id, user_id, type, claimed_by, closed, created_at)
+      VALUES (?, ?, ?, ?, NULL, 0, ?)
+    `).run(channel.id, interaction.guild.id, interaction.user.id, type, Date.now());
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     await interaction.editReply({
       content: `✅ Your ticket has been created:\n\n**#${channel.name}**\n${channelUrl(interaction.guild.id, channel.id)}`
