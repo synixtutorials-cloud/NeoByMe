@@ -324,4 +324,9 @@ module.exports = [
         .setDescription('Set the mod-log channel')
         .addChannelOption(o => o.setName('channel').setDescription('Channel for mod logs').setRequired(true))
     )
+,
+
+  new SlashCommandBuilder()
+    .setName('testchannel')
+    .setDescription('Test channel creation - debug only')
 ];

@@ -241,6 +241,19 @@ client.on(Events.InteractionCreate, async i => {
     if (n === 'backup' && i.options.getSubcommand() === 'create') return backup.createBackup(i);
     if (n === 'backup' && i.options.getSubcommand() === 'list') return backup.listBackups(i);
     if (n === 'backup' && i.options.getSubcommand() === 'restore') return backup.restoreBackup(i);
+    if (n === 'testchannel') {
+      const ch = await i.guild.channels.create({ name: 'test-channel-' + Date.now(), type: 0 });
+      console.log('TEST CHANNEL CREATED:', ch.id);
+      try {
+        await ch.send('Hello test');
+        console.log('TEST SEND SUCCEEDED');
+        await i.reply({ content: 'Success! Channel: ' + ch.id, ephemeral: true });
+      } catch (err) {
+        console.error('TEST SEND FAILED:', err.message);
+        await i.reply({ content: 'Send failed: ' + err.message, ephemeral: true });
+      }
+      return;
+    }
     if (n === 'warn') return moderation.warnUser(i);
     if (n === 'warnings') return moderation.showWarnings(i);
     if (n === 'kick') return moderation.kickUser(i);
