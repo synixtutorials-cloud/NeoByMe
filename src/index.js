@@ -6,6 +6,7 @@ const {
   Events,
   EmbedBuilder,
   PermissionsBitField,
+  PermissionFlagsBits,
   ChannelType
 } = require('discord.js');
 
@@ -242,7 +243,15 @@ client.on(Events.InteractionCreate, async i => {
     if (n === 'backup' && i.options.getSubcommand() === 'list') return backup.listBackups(i);
     if (n === 'backup' && i.options.getSubcommand() === 'restore') return backup.restoreBackup(i);
     if (n === 'testchannel') {
-      const ch = await i.guild.channels.create({ name: 'test-channel-' + Date.now(), type: 0 });
+      const ch = await i.guild.channels.create({
+        name: 'test-channel-' + Date.now(),
+        type: 0,
+        permissionOverwrites: [
+          { id: i.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+          { id: i.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles] },
+          { id: i.client.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageMessages, PermissionFlagsBits.AttachFiles] }
+        ]
+      });
       console.log('TEST CHANNEL CREATED:', ch.id);
       try {
         await ch.send('Hello test');
