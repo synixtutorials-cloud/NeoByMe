@@ -25,6 +25,7 @@ const linkfilter = require('./linkfilter');
 const backup = require('./backup');
 const activity = require('./activity');
 const moderation = require('./moderation');
+const emojiutils = require('./emojiutils');
 
 const client = new Client({
   intents: [
@@ -270,6 +271,8 @@ client.on(Events.InteractionCreate, async i => {
     if (n === 'mute') return moderation.muteUser(i);
     if (n === 'say') return moderation.sayMessage(i);
     if (n === 'modlog' && i.options.getSubcommand() === 'setchannel') return moderation.setModLogChannel(i);
+    if (n === 'react') return emojiutils.reactCommand(i);
+    if (n === 'emoji') return emojiutils.emojiCommand(i);
   } catch (err) {
     console.error('Interaction error:', err);
 

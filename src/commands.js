@@ -329,4 +329,16 @@ module.exports = [
   new SlashCommandBuilder()
     .setName('testchannel')
     .setDescription('Test channel creation - debug only')
+,
+
+  new SlashCommandBuilder()
+    .setName('react')
+    .setDescription('React to a message with an emoji')
+    .addStringOption(o => o.setName('emoji').setDescription('Emoji name or unicode emoji').setRequired(true))
+    .addStringOption(o => o.setName('message').setDescription('Message link or ID (defaults to the latest message)')),
+
+  new SlashCommandBuilder()
+    .setName('emoji')
+    .setDescription('Get the raw code for a custom emoji')
+    .addStringOption(o => o.setName('name').setDescription('Emoji name').setRequired(true))
 ];
